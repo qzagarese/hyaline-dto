@@ -1,8 +1,8 @@
 package org.hyaline.api;
 
-import org.hyaline.core.ExtensionBasedHyalineProxyFactory;
 import org.hyaline.core.HyalineProxyFactory;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
+import org.hyaline.core.proxy.ExtensionBasedHyalineProxyFactory;
 import org.hyaline.exception.HyalineException;
 
 /** 

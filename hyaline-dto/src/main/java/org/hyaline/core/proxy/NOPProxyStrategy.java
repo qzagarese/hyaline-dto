@@ -1,6 +1,8 @@
-package org.hyaline.core;
+package org.hyaline.core.proxy;
 
 import java.lang.reflect.Method;
+
+import org.hyaline.core.ProxyStrategy;
 
 public class NOPProxyStrategy implements ProxyStrategy {
 

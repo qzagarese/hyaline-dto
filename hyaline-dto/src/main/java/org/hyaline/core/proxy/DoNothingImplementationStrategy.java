@@ -1,8 +1,10 @@
-package org.hyaline.core;
+package org.hyaline.core.proxy;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+
+import org.hyaline.core.InterfaceImplementationStrategy;
 
 public class DoNothingImplementationStrategy implements
 		InterfaceImplementationStrategy {

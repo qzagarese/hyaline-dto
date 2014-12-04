@@ -1,4 +1,4 @@
-package org.hyaline.core;
+package org.hyaline.core.proxy;
 
 import java.lang.reflect.Method;
 

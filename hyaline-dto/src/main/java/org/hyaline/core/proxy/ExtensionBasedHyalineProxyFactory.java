@@ -1,9 +1,14 @@
-package org.hyaline.core;
+package org.hyaline.core.proxy;
 
 import java.lang.annotation.Annotation;
 
 import org.hyaline.api.DTO;
 import org.hyaline.api.HyalineProxy;
+import org.hyaline.core.ClassBuilder;
+import org.hyaline.core.HyalineProxyFactory;
+import org.hyaline.core.InterfaceImplementationStrategy;
+import org.hyaline.core.ProxyStrategy;
+import org.hyaline.core.build.JavassistBasedClassBuilder;
 import org.hyaline.core.exception.CannotBuildClassException;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
 import org.hyaline.core.reflect.DTODescription;

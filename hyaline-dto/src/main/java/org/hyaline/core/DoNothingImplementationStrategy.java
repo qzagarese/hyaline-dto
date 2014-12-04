@@ -10,8 +10,8 @@ public class DoNothingImplementationStrategy implements
 	@Override
 	public String getImplementationFor(Object target, Method method) {
 		StringBuffer buffer = new StringBuffer();
-		
-		writeModifiersAndName(method, buffer);
+
+		writeModifiersReturnTypeAndName(method, buffer);
 
 		// write parameters
 		writeParameters(method, buffer);
@@ -25,8 +25,17 @@ public class DoNothingImplementationStrategy implements
 		return buffer.toString();
 	}
 
-	protected void writeModifiersAndName(Method method, StringBuffer buffer) {
+	@Override
+	public String getImplementationBodyFor(Object target, Method method) {
+		StringBuffer buffer = new StringBuffer();
+		writeBody(method, buffer);
+		return buffer.toString();
+	}
+
+	protected void writeModifiersReturnTypeAndName(Method method,
+			StringBuffer buffer) {
 		buffer.append(Modifier.toString(method.getModifiers())).append(" ")
+				.append(method.getReturnType().getCanonicalName()).append(" ")
 				.append(method.getName());
 	}
 
@@ -45,7 +54,7 @@ public class DoNothingImplementationStrategy implements
 				buffer.append("return 0;");
 				break;
 			}
-		} 
+		}
 
 		buffer.append("}");
 	}

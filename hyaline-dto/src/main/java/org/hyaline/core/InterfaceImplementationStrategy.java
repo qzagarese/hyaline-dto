@@ -5,5 +5,8 @@ import java.lang.reflect.Method;
 public interface InterfaceImplementationStrategy {
 
 	String getImplementationFor(Object target, Method method);
+
+	
+	String getImplementationBodyFor(Object target, Method method);
 	
 }

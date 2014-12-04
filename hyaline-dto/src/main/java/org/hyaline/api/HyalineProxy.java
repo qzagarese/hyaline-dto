@@ -1,7 +1,7 @@
 package org.hyaline.api;
 
-public interface HyalineProxy {
+public interface HyalineProxy<T> {
 
-	Object getTarget();
+	T getTarget();
 
 }

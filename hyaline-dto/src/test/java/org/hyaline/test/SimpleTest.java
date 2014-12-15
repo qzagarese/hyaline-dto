@@ -11,18 +11,23 @@ public class SimpleTest {
 
 	@Test
 	public void testDtoFromScratch() throws HyalineException {
-		Person entity = new Person();
-		entity = Hyaline.dtoFromScratch(entity, new DTO() {
+		final Person entity = new Person();
+		Person dto = Hyaline.dtoFromScratch(entity, new DTO() {
 
 			@JsonProperty
-			String firstName;
-			
+			String firstName = entity.getFirstName().trim();
 			
 			
 		});
 
 		Hyaline.dtoFromScratch(entity, new DTO() {
 
+			class Template{
+				
+				private String firstAndLast = entity.getFirstName() + entity.getLastName();
+				
+			}
+			
 		});
 	}
 

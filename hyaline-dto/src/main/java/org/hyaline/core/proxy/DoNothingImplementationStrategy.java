@@ -52,6 +52,10 @@ public class DoNothingImplementationStrategy implements
 			case "Z":
 				buffer.append("return false;");
 				break;
+				
+			case "void":
+				break;
+				
 			default:
 				buffer.append("return 0;");
 				break;
@@ -63,7 +67,7 @@ public class DoNothingImplementationStrategy implements
 
 	protected void writeDeclaredExceptions(Method method, StringBuffer buffer) {
 		Class<?>[] exceptionTypes = method.getExceptionTypes();
-		if (exceptionTypes != null) {
+		if (exceptionTypes != null && exceptionTypes.length > 0) {
 			buffer.append("throws ");
 			for (int i = 0; i < exceptionTypes.length; i++) {
 				buffer.append(exceptionTypes[i].getCanonicalName()).append(" ");

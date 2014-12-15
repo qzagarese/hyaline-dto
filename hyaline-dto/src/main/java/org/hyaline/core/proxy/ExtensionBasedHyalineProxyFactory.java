@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import org.hyaline.api.DTO;
 import org.hyaline.api.HyalineProxy;
 import org.hyaline.core.ClassBuilder;
+import org.hyaline.core.ClassRepository;
 import org.hyaline.core.HyalineProxyFactory;
 import org.hyaline.core.InterfaceImplementationStrategy;
 import org.hyaline.core.ProxyStrategy;
@@ -20,6 +21,19 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 	private ProxyStrategy proxyStrategy = new NOPProxyStrategy();
 
 	private InterfaceImplementationStrategy interfaceImplementationStrategy = new HyalineProxyImplementationStrategy();
+
+	private ClassRepository<String, Class<?>> classRepository = new BaseClassRepository();
+
+	
+	@Override
+	public ClassRepository<String, Class<?>> getClassRepository() {
+		return classRepository;
+	}
+
+	@Override
+	public void setClassRepository(ClassRepository<String, Class<?>> classRepository) {
+		this.classRepository = classRepository;
+	}
 
 	@Override
 	public InterfaceImplementationStrategy getInterfaceImplementationStrategy() {
@@ -55,31 +69,66 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 	@Override
 	public <T> Object createFromScratch(T entity, DTO config)
 			throws CannotInstantiateProxyException {
-		DTODescription description = createDescription(entity, config, true);
-		Object proxy = buildProxy(description);
-		return proxy;
+		return create(entity, config, true);
 	}
 
 	@Override
 	public <T> Object createFromClass(T entity, DTO config)
 			throws CannotInstantiateProxyException {
-		DTODescription description = createDescription(entity, config, false);
-		Object proxy = buildProxy(description);
+		return create(entity, config, false);
+	}
+
+	private <T> Object create(T entity, DTO config, boolean override)
+			throws CannotInstantiateProxyException {
+		// check if a proxy definition for the template class already exists
+		Class<?> templateClass = getTemplateClass(config);
+		Class<?> proxyClass = classRepository.get(templateClass
+				.getCanonicalName());
+
+		// if not, create it and save it to the repository
+		if (proxyClass == null) {
+			// create a description for the proxy definition
+			DTODescription description = createDescription(entity, config,
+					override);
+			// build the proxy definition
+			proxyClass = buildProxyClass(description);
+		}
+		classRepository.put(templateClass.getCanonicalName(), proxyClass);
+		
+		
+		// finally, instantiate the proxy class
+		Object proxy = null;
+		try {
+			proxy = proxyClass.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			e.printStackTrace();
+			throw new CannotInstantiateProxyException();
+		}
+
 		return proxy;
 	}
 
-	private Object buildProxy(DTODescription description)
+	private Class<?> getTemplateClass(DTO config) {
+		Class<?> templateClass = null;
+		Class<?>[] innerClasses = config.getClass().getClasses();
+		if (innerClasses != null && config.getClass().getClasses().length > 0) {
+			templateClass = innerClasses[0];
+		} else {
+			templateClass = config.getClass();
+		}
+		return templateClass;
+	}
+
+	private Class<?> buildProxyClass(DTODescription description)
 			throws CannotInstantiateProxyException {
-		Object proxy = null;
+		Class<?> proxyClass = null;
 		try {
-			Class<?> proxyClass = classBuilder.buildClass(description,
-					proxyStrategy, interfaceImplementationStrategy);
-			proxy = proxyClass.newInstance();
-		} catch (CannotBuildClassException | InstantiationException
-				| IllegalAccessException e) {
+			proxyClass = classBuilder.buildClass(description, proxyStrategy,
+					interfaceImplementationStrategy);
+		} catch (CannotBuildClassException e) {
 			throw new CannotInstantiateProxyException();
 		}
-		return proxy;
+		return proxyClass;
 	}
 
 	private DTODescription createDescription(Object entity, DTO config,
@@ -87,16 +136,18 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		DTODescription description = new DTODescription(entity);
 		description.addImplementedInterface(HyalineProxy.class);
 		if (override) {
-			getAnnotationsFromDTO(config, description);
+			getClassAnnotationsFromDTO(config, description);
 		} else {
-			mergeAnnotationsFromDTO(config, description);
+			mergeClassAnnotationsFromDTO(config, description);
 		}
-
+		// TODO Handle fields and methods annotation here
+		
 		return description;
 	}
 
-	private void mergeAnnotationsFromDTO(DTO config, DTODescription description) {
-		Class<?> dtoTypeConfig = getDTOTypeConfig(config);
+	private void mergeClassAnnotationsFromDTO(DTO config,
+			DTODescription description) {
+		Class<?> dtoTypeConfig = getTemplateClass(config);
 		Annotation[] dtoConfigTypeAnnotations = dtoTypeConfig
 				.getDeclaredAnnotations();
 		Annotation[] entityClassAnnotations = description.getType()
@@ -116,8 +167,9 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		}
 	}
 
-	private void getAnnotationsFromDTO(DTO config, DTODescription description) {
-		Annotation[] declaredAnnotations = getDTOTypeConfig(config)
+	private void getClassAnnotationsFromDTO(DTO config,
+			DTODescription description) {
+		Annotation[] declaredAnnotations = getTemplateClass(config)
 				.getDeclaredAnnotations();
 		if (declaredAnnotations != null) {
 			for (Annotation annotation : declaredAnnotations) {
@@ -126,15 +178,6 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		}
 	}
 
-	private Class<?> getDTOTypeConfig(DTO config) {
-		Class<?> typeConfig = null;
-		Class<?>[] classes = config.getClass().getClasses();
-		if (classes != null && classes.length > 0) {
-			// if user defines more than one class in the invocation, we take
-			// only the first
-			typeConfig = classes[0];
-		}
-		return typeConfig;
-	}
+	
 
 }

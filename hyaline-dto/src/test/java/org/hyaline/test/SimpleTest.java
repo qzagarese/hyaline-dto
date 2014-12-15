@@ -16,18 +16,19 @@ public class SimpleTest {
 
 			@JsonProperty
 			String firstName = entity.getFirstName().trim();
-			
-			
+
 		});
 
 		Hyaline.dtoFromScratch(entity, new DTO() {
 
-			class Template{
-				
-				private String firstAndLast = entity.getFirstName() + entity.getLastName();
-				
+			abstract class Template {
+
+				private String firstAndLast = entity.getFirstName()
+						+ entity.getLastName();
+
+				abstract String getFirstAndLast();
 			}
-			
+
 		});
 	}
 

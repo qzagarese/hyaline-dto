@@ -1,6 +1,7 @@
 package org.hyaline.core.proxy;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 
 import org.hyaline.api.DTO;
 import org.hyaline.api.HyalineProxy;
@@ -13,6 +14,7 @@ import org.hyaline.core.build.JavassistBasedClassBuilder;
 import org.hyaline.core.exception.CannotBuildClassException;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
 import org.hyaline.core.reflect.DTODescription;
+import org.hyaline.core.reflect.FieldDescription;
 
 public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
@@ -24,14 +26,14 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
 	private ClassRepository<String, Class<?>> classRepository = new BaseClassRepository();
 
-	
 	@Override
 	public ClassRepository<String, Class<?>> getClassRepository() {
 		return classRepository;
 	}
 
 	@Override
-	public void setClassRepository(ClassRepository<String, Class<?>> classRepository) {
+	public void setClassRepository(
+			ClassRepository<String, Class<?>> classRepository) {
 		this.classRepository = classRepository;
 	}
 
@@ -94,8 +96,7 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			proxyClass = buildProxyClass(description);
 		}
 		classRepository.put(templateClass.getCanonicalName(), proxyClass);
-		
-		
+
 		// finally, instantiate the proxy class
 		Object proxy = null;
 		try {
@@ -141,26 +142,50 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			mergeClassAnnotationsFromDTO(config, description);
 		}
 		// TODO Handle fields and methods annotation here
-		
+		Class<?> dtoType = getTemplateClass(config);
+		for (Field f : dtoType.getDeclaredFields()) {
+			FieldDescription desc = new FieldDescription();
+			boolean injectable = isFieldInjectable(config, f);
+			desc.setInjectable(injectable);
+			desc.setField(f);
+			Annotation[] fieldAnnotations = f.getDeclaredAnnotations();
+			if (fieldAnnotations != null) {
+				for (Annotation annotation : fieldAnnotations) {
+					desc.addAnnotation(annotation);
+				}
+			}
+		}
+
 		return description;
+	}
+
+	private boolean isFieldInjectable(Object dto, Field f) {
+		boolean accessible = f.isAccessible();
+		f.setAccessible(true);
+		Object value = null;
+		try {
+			value = f.get(dto);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		f.setAccessible(accessible);
+		return (value != null);
 	}
 
 	private void mergeClassAnnotationsFromDTO(DTO config,
 			DTODescription description) {
-		Class<?> dtoTypeConfig = getTemplateClass(config);
-		Annotation[] dtoConfigTypeAnnotations = dtoTypeConfig
-				.getDeclaredAnnotations();
+		Class<?> dtoType = getTemplateClass(config);
+		Annotation[] dtoTypeAnnotations = dtoType.getDeclaredAnnotations();
 		Annotation[] entityClassAnnotations = description.getType()
 				.getDeclaredAnnotations();
-		if (dtoConfigTypeAnnotations != null) {
-			for (Annotation annotation : dtoConfigTypeAnnotations) {
+		if (dtoTypeAnnotations != null) {
+			for (Annotation annotation : dtoTypeAnnotations) {
 				description.addAnnotation(annotation);
 			}
 		}
 		if (entityClassAnnotations != null) {
 			for (Annotation annotation : entityClassAnnotations) {
-				if (!dtoTypeConfig.isAnnotationPresent(annotation
-						.annotationType())) {
+				if (!dtoType.isAnnotationPresent(annotation.annotationType())) {
 					description.addAnnotation(annotation);
 				}
 			}
@@ -177,7 +202,5 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			}
 		}
 	}
-
-	
 
 }

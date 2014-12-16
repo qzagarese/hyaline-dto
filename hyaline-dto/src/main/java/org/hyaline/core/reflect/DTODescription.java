@@ -2,21 +2,23 @@ package org.hyaline.core.reflect;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DTODescription {
 
 	private final Object target;
-	
+
 	private final Class<?> type;
 
 	private List<Class<?>> implementedInterfaces;
 
 	private List<Annotation> annotations;
 
-	private List<FieldDescription> fields;
+	private Map<String, FieldDescription> fields = new HashMap<String, FieldDescription>();
 
-	private List<MethodDescription> methods;
+	private Map<String, MethodDescription> methods = new HashMap<String, MethodDescription>();
 
 	public DTODescription(Object target) {
 		this.target = target;
@@ -46,34 +48,24 @@ public class DTODescription {
 		annotations.add(annotation);
 	}
 
-	public List<FieldDescription> getFields() {
+	public Map<String, FieldDescription> getFields() {
 		return fields;
 	}
 
-	public void setFields(List<FieldDescription> fields) {
+	public void setFields(Map<String, FieldDescription> fields) {
 		this.fields = fields;
 	}
 
-	public void addField(FieldDescription field) {
-		if (fields == null) {
-			fields = new ArrayList<FieldDescription>();
-		}
-		fields.add(field);
-	}
-
-	public List<MethodDescription> getMethods() {
-		return methods;
-	}
-
-	public void setMethods(List<MethodDescription> methods) {
+	public void setMethods(Map<String, MethodDescription> methods) {
 		this.methods = methods;
 	}
 
-	public void addMethod(MethodDescription method) {
-		if (methods == null) {
-			methods = new ArrayList<MethodDescription>();
-		}
-		methods.add(method);
+	public void putField(FieldDescription field) {
+		fields.put(field.getField().getName(), field);
+	}
+
+	public void putMethod(MethodDescription method) {
+		methods.put(method.getMethod().getName(), method);
 	}
 
 	public List<Class<?>> getImplementedInterfaces() {
@@ -93,4 +85,11 @@ public class DTODescription {
 		}
 	}
 
+	public FieldDescription getField(String name) {
+		return fields.get(name);
+	}
+
+	public MethodDescription getMethod(String name) {
+		return methods.get(name);
+	}
 }

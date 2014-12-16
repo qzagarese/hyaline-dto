@@ -3,6 +3,7 @@ package org.hyaline.api;
 import org.hyaline.core.HyalineProxyFactory;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
 import org.hyaline.core.proxy.ExtensionBasedHyalineProxyFactory;
+import org.hyaline.exception.DTODefinitionException;
 import org.hyaline.exception.HyalineException;
 
 /** 
@@ -36,7 +37,7 @@ public class Hyaline {
 	public static <T> T dtoFromScratch(T entity, DTO config) throws HyalineException {
 		try {
 			return (T) proxyFactory.createFromScratch(entity, config);
-		} catch (CannotInstantiateProxyException e) {
+		} catch (CannotInstantiateProxyException | DTODefinitionException e) {
 			e.printStackTrace();
 			throw new HyalineException();
 		}
@@ -63,7 +64,7 @@ public class Hyaline {
 	public static <T> T dtoFromClass(T entity, DTO config) throws HyalineException {
 		try {
 			return (T) proxyFactory.createFromClass(entity, config);
-		} catch (CannotInstantiateProxyException e) {
+		} catch (CannotInstantiateProxyException | DTODefinitionException e) {
 			e.printStackTrace();
 			throw new HyalineException();
 		}

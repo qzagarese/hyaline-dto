@@ -49,7 +49,7 @@ public class DoNothingImplementationStrategy implements
 		} else if (returnType.isPrimitive()) {
 			switch (returnType.getName()) {
 
-			case "Z":
+			case "boolean":
 				buffer.append("return false;");
 				break;
 				

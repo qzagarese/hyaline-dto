@@ -11,6 +11,8 @@ public class FieldDescription {
 	
 	private boolean injectable;
 	
+	private boolean fromTemplate = false;
+	
 	private List<Annotation> annotations;
 
 	public Field getField() {
@@ -42,6 +44,14 @@ public class FieldDescription {
 			annotations = new ArrayList<Annotation>();
 		}
 		annotations.add(annotation);
+	}
+
+	public boolean isFromTemplate() {
+		return fromTemplate;
+	}
+
+	public void setFromTemplate(boolean fromTemplate) {
+		this.fromTemplate = fromTemplate;
 	}
 	
 }

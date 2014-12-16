@@ -12,6 +12,7 @@ public class SimpleTest {
 	@Test
 	public void testDtoFromScratch() throws HyalineException {
 		final Person entity = new Person();
+		entity.setFirstName("hello");
 		Person dto = Hyaline.dtoFromScratch(entity, new DTO() {
 
 			@JsonProperty
@@ -19,17 +20,17 @@ public class SimpleTest {
 
 		});
 
-		Hyaline.dtoFromScratch(entity, new DTO() {
-
-			abstract class Template {
-
-				private String firstAndLast = entity.getFirstName()
-						+ entity.getLastName();
-
-				abstract String getFirstAndLast();
-			}
-
-		});
+//		Hyaline.dtoFromScratch(entity, new DTO() {
+//
+//			abstract class Template {
+//
+//				private String firstAndLast = entity.getFirstName()
+//						+ entity.getLastName();
+//
+//				abstract String getFirstAndLast();
+//			}
+//
+//		});
 	}
 
 }

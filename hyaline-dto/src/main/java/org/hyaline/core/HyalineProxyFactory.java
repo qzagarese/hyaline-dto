@@ -2,14 +2,15 @@ package org.hyaline.core;
 
 import org.hyaline.api.DTO;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
+import org.hyaline.exception.DTODefinitionException;
 
 public interface HyalineProxyFactory {
 
 	<T> Object createFromScratch(T entity, DTO config)
-			throws CannotInstantiateProxyException;
+			throws CannotInstantiateProxyException, DTODefinitionException;
 
 	<T> Object createFromClass(T entity, DTO config)
-			throws CannotInstantiateProxyException;
+			throws CannotInstantiateProxyException, DTODefinitionException;
 
 	ClassBuilder getClassBuilder();
 

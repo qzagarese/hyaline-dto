@@ -1,17 +1,24 @@
 package org.hyaline.core.build;
 
+import java.lang.reflect.Method;
+
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
-import javassist.CtConstructor;
-import javassist.CtNewConstructor;
+import javassist.CtField;
+import javassist.CtMethod;
 import javassist.NotFoundException;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
 
 import org.hyaline.core.ClassBuilder;
 import org.hyaline.core.InterfaceImplementationStrategy;
 import org.hyaline.core.ProxyStrategy;
 import org.hyaline.core.exception.CannotBuildClassException;
 import org.hyaline.core.reflect.DTODescription;
+import org.hyaline.core.reflect.FieldDescription;
 
 public class JavassistBasedClassBuilder implements ClassBuilder {
 
@@ -21,49 +28,74 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			InterfaceImplementationStrategy interfaceImplementationStrategy)
 			throws CannotBuildClassException {
 		ClassPool classPool = ClassPool.getDefault();
-		Class<? extends Object> realClass = description.getType();
-		CtClass clazz = classPool.makeClass(realClass.getSimpleName()
-				+ "$HyalineProxy$" + System.currentTimeMillis());
+		Class<? extends Object> entityClass = description.getType();
+		CtClass hyalineProxyClass = classPool.makeClass(entityClass
+				.getSimpleName()
+				+ "$HyalineProxy$"
+				+ System.currentTimeMillis());
 		try {
-			CtClass javassistRealClass = classPool.get(realClass.getName());
 
-			clazz.setSuperclass(classPool.get(realClass.getName()));
+			hyalineProxyClass
+					.setSuperclass(classPool.get(entityClass.getName()));
 			for (Class<?> interfaceType : description
 					.getImplementedInterfaces()) {
-				clazz.addInterface(ClassPool.getDefault().get(
-						interfaceType.getCanonicalName()));
+				hyalineProxyClass.addInterface(ClassPool.getDefault().get(
+						interfaceType.getName()));
+			}
+
+			ClassFile ccFile = hyalineProxyClass.getClassFile();
+			ConstPool constpool = ccFile.getConstPool();
+
+			for (FieldDescription field : description.getFields().values()) {
+				CtField ctField = createFieldFromDescription(classPool,
+						constpool, field);
+				
+				hyalineProxyClass.addField(ctField);
+				if (field.isFromTemplate()) {
+
+					CtMethod getter = createGetter(field);
+					CtMethod setter = createSetter(field);
+				}
 			}
 
 		} catch (NotFoundException | CannotCompileException e) {
 			throw new CannotBuildClassException();
 		}
+		try {
+			return hyalineProxyClass.toClass();
+		} catch (CannotCompileException e) {
+			e.printStackTrace();
+			throw new CannotBuildClassException();
+		}
+	}
+
+	private CtField createFieldFromDescription(ClassPool classPool,
+			ConstPool constpool, FieldDescription field)
+			throws CannotCompileException, NotFoundException {
+		CtField ctField = CtField.make("private " + field.getField().getClass().getName() + " " + field.getField().getName() + ";",
+				classPool.get(field.getField().getClass().getName()));
+		if (field.getAnnotations() != null
+				&& field.getAnnotations().size() > 0) {
+			AnnotationsAttribute attr = new AnnotationsAttribute(
+					constpool, AnnotationsAttribute.visibleTag);
+			for (java.lang.annotation.Annotation annotation : field.getAnnotations()) {
+				Annotation annotationCopy = new Annotation(annotation.annotationType().getName(), constpool);
+				for (Method m : annotation.annotationType().getDeclaredMethods()) {
+					System.out.println(m.getName());
+				}
+			}
+		}
+		return ctField;
+	}
+
+	private CtMethod createSetter(FieldDescription field) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 
-	
-	private void createConstructor(CtClass clazz) {
-		CtConstructor c = null;
-		CtClass[] parameters = new CtClass[1];
-		ClassPool classPool = ClassPool.getDefault();
-		try {
-			parameters[0] = classPool
-					.get("it.unisannio.ding.dyno4ws.proxy.ProxyContext");
-		} catch (NotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		CtClass[] exceptions = new CtClass[0];
-		String body = "{" + "		this.context = $1;"
-				+ "		this.context.setProxy(this);"
-				+ "		this.context.getInterceptor().onConstruct(this.context);"
-				+ "}";
-		try {
-			c = CtNewConstructor.make(parameters, exceptions, body, clazz);
-			clazz.addConstructor(c);
-		} catch (CannotCompileException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	private CtMethod createGetter(FieldDescription field) {
+		// TODO Auto-generated method stub
+		return null;
 	}
-	
+
 }

@@ -92,11 +92,11 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		// check if a proxy definition for the template class already exists
 		Class<?> templateClass = getTemplateClass(config);
 		Class<?> proxyClass = classRepository.get(templateClass
-				.getCanonicalName());
+				.getName());
 
 		// check if a DTO description for the template class already exists
 		DTODescription description = dtoDescriptions.get(templateClass
-				.getCanonicalName());
+				.getName());
 
 		// if not, create a description for the proxy definition and save it for
 		// future invocations
@@ -128,8 +128,8 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
 	private Class<?> getTemplateClass(DTO config) {
 		Class<?> templateClass = null;
-		Class<?>[] innerClasses = config.getClass().getClasses();
-		if (innerClasses != null && config.getClass().getClasses().length > 0) {
+		Class<?>[] innerClasses = config.getClass().getDeclaredClasses();
+		if (innerClasses != null && innerClasses.length > 0) {
 			templateClass = innerClasses[0];
 		} else {
 			templateClass = config.getClass();

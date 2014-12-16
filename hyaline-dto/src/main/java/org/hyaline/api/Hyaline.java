@@ -2,7 +2,7 @@ package org.hyaline.api;
 
 import org.hyaline.core.HyalineProxyFactory;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
-import org.hyaline.core.proxy.ExtensionBasedHyalineProxyFactory;
+import org.hyaline.core.proxy.ReflectionBasedHyalineProxyFactory;
 import org.hyaline.exception.DTODefinitionException;
 import org.hyaline.exception.HyalineException;
 
@@ -16,7 +16,7 @@ import org.hyaline.exception.HyalineException;
 public class Hyaline {
 
 	/** The proxy factory. */
-	private static HyalineProxyFactory proxyFactory = new ExtensionBasedHyalineProxyFactory();
+	private static HyalineProxyFactory proxyFactory = new ReflectionBasedHyalineProxyFactory();
 	
 	/**
 	 * It lets you create a new DTO from scratch. This means that any

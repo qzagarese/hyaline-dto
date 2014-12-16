@@ -15,22 +15,25 @@ public class SimpleTest {
 		entity.setFirstName("hello");
 		Person dto = Hyaline.dtoFromScratch(entity, new DTO() {
 
-			@JsonProperty
-			String firstName = entity.getFirstName().trim();
+			class Template {
+			
+				@JsonProperty
+				String firstName = entity.getFirstName().trim();
 
+			}
 		});
 
-//		Hyaline.dtoFromScratch(entity, new DTO() {
-//
-//			abstract class Template {
-//
-//				private String firstAndLast = entity.getFirstName()
-//						+ entity.getLastName();
-//
-//				abstract String getFirstAndLast();
-//			}
-//
-//		});
+		// Hyaline.dtoFromScratch(entity, new DTO() {
+		//
+		// abstract class Template {
+		//
+		// private String firstAndLast = entity.getFirstName()
+		// + entity.getLastName();
+		//
+		// abstract String getFirstAndLast();
+		// }
+		//
+		// });
 	}
 
 }

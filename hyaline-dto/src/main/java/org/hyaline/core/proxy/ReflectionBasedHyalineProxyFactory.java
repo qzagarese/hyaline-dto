@@ -21,7 +21,7 @@ import org.hyaline.core.reflect.FieldDescription;
 import org.hyaline.core.reflect.MethodDescription;
 import org.hyaline.exception.DTODefinitionException;
 
-public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
+public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
 	private ClassBuilder classBuilder = new JavassistBasedClassBuilder();
 
@@ -163,8 +163,12 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		Class<?> targetType = description.getType();
 
 		for (Field f : dtoType.getDeclaredFields()) {
-			FieldDescription desc = handleFieldFromDTO(config, f, targetType);
-			description.putField(desc);
+			// avoid treating anonymous classes as fields
+			if (!f.getName().startsWith("this$")) {
+				FieldDescription desc = handleFieldFromDTO(config, f,
+						targetType);
+				description.putField(desc);
+			}
 		}
 
 		for (Field f : targetType.getDeclaredFields()) {
@@ -291,7 +295,7 @@ public class ExtensionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		desc.setInjectable(injectable);
 		desc.setField(f);
 		try {
-			targetType.getField(f.getName());
+			targetType.getDeclaredField(f.getName());
 		} catch (NoSuchFieldException | SecurityException e) {
 			// this field does not exist in the entity class, so we tell the
 			// class builder we need a getter and a setter for it

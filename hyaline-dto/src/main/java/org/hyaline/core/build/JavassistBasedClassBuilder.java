@@ -39,7 +39,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			InterfaceImplementationStrategy interfaceImplementationStrategy)
 			throws CannotBuildClassException {
 		ClassPool classPool = ClassPool.getDefault();
-		Class<? extends Object> entityClass = description.getType();
+		Class<?> entityClass = description.getType();
 		CtClass hyalineProxyClass = classPool.makeClass(entityClass
 				.getSimpleName()
 				+ "$HyalineProxy$"
@@ -57,19 +57,28 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			ClassFile ccFile = hyalineProxyClass.getClassFile();
 			ConstPool constpool = ccFile.getConstPool();
 
+			// TODO Add annotations to Class
+
+			// Here I create the necessary fields
 			for (FieldDescription field : description.getFields().values()) {
 				CtField ctField = createFieldFromDescription(classPool,
-						constpool, field);
+						constpool, field, hyalineProxyClass);
 
 				hyalineProxyClass.addField(ctField);
-				if (field.isFromTemplate()) {
 
-					CtMethod getter = createGetter(field);
-					CtMethod setter = createSetter(field);
-				}
+				// TODO handle here the generation of getters and setters for
+				// new fields
+				// if (field.isFromTemplate()) {
+				//
+				// CtMethod getter = createGetter(field);
+				// CtMethod setter = createSetter(field);
+				// }
 			}
 
+			//TODO Handle here all the methods
+			
 		} catch (NotFoundException | CannotCompileException e) {
+			e.printStackTrace();
 			throw new CannotBuildClassException(e.getMessage());
 		}
 		try {
@@ -81,20 +90,19 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	}
 
 	private CtField createFieldFromDescription(ClassPool classPool,
-			ConstPool constpool, FieldDescription field)
-			throws CannotCompileException, NotFoundException,
-			CannotBuildClassException {
+			ConstPool constpool, FieldDescription field,
+			CtClass hyalineProxyClass) throws CannotCompileException,
+			NotFoundException, CannotBuildClassException {
 		CtField ctField = CtField.make("private "
 				+ field.getField().getClass().getName() + " "
-				+ field.getField().getName() + ";",
-				classPool.get(field.getField().getClass().getName()));
+				+ field.getField().getName() + ";", hyalineProxyClass);
 		if (field.getAnnotations() != null && field.getAnnotations().size() > 0) {
 			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
 					AnnotationsAttribute.visibleTag);
 			for (java.lang.annotation.Annotation annotation : field
 					.getAnnotations()) {
-				Annotation annotationCopy = JavassistUtils.createJavassistAnnotation(
-						constpool, annotation);
+				Annotation annotationCopy = JavassistUtils
+						.createJavassistAnnotation(constpool, annotation);
 				attr.addAnnotation(annotationCopy);
 			}
 			ctField.getFieldInfo().addAttribute(attr);
@@ -102,9 +110,6 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		return ctField;
 	}
 
-	
-
-	
 	private CtMethod createSetter(FieldDescription field) {
 		// TODO Auto-generated method stub
 		return null;

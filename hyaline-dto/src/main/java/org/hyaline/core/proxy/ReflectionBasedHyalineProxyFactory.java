@@ -1,9 +1,7 @@
 package org.hyaline.core.proxy;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -128,7 +126,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		Object proxy = null;
 		try {
 			proxy = proxyClass.newInstance();
-			// TODO handle here injectable fields
+			// TODO handle here fields where to inject values
 		} catch (InstantiationException | IllegalAccessException e) {
 			e.printStackTrace();
 			throw new CannotInstantiateProxyException();

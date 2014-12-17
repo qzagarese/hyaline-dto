@@ -1,5 +1,7 @@
 package org.hyaline.test;
 
+import javax.xml.bind.annotation.XmlAttribute;
+
 import org.hyaline.api.DTO;
 import org.hyaline.api.Hyaline;
 import org.hyaline.exception.HyalineException;

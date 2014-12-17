@@ -2,6 +2,10 @@ package org.hyaline.core.exception;
 
 public class CannotBuildClassException extends Exception {
 
+	public CannotBuildClassException(String message) {
+		super(message);
+	}
+
 	/**
 	 * 
 	 */

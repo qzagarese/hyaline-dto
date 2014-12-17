@@ -12,14 +12,18 @@ public class SimpleTest {
 	@Test
 	public void testDtoFromScratch() throws HyalineException {
 		final Person entity = new Person();
+		final Person p2 = new Person();
 		entity.setFirstName("hello");
 		Person dto = Hyaline.dtoFromScratch(entity, new DTO() {
-
-			class Template {
 			
+			Template template = new Template();
+			
+			class Template {
+							
 				@JsonProperty
 				String firstName = entity.getFirstName().trim();
 
+				String p2Name = p2.getFirstName();
 			}
 		});
 

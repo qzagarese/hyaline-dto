@@ -1,5 +1,6 @@
 package org.hyaline.core.build;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import javassist.CannotCompileException;
@@ -12,6 +13,16 @@ import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
+import javassist.bytecode.annotation.BooleanMemberValue;
+import javassist.bytecode.annotation.ByteMemberValue;
+import javassist.bytecode.annotation.CharMemberValue;
+import javassist.bytecode.annotation.DoubleMemberValue;
+import javassist.bytecode.annotation.FloatMemberValue;
+import javassist.bytecode.annotation.IntegerMemberValue;
+import javassist.bytecode.annotation.LongMemberValue;
+import javassist.bytecode.annotation.MemberValue;
+import javassist.bytecode.annotation.ShortMemberValue;
+import javassist.bytecode.annotation.StringMemberValue;
 
 import org.hyaline.core.ClassBuilder;
 import org.hyaline.core.InterfaceImplementationStrategy;
@@ -49,7 +60,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			for (FieldDescription field : description.getFields().values()) {
 				CtField ctField = createFieldFromDescription(classPool,
 						constpool, field);
-				
+
 				hyalineProxyClass.addField(ctField);
 				if (field.isFromTemplate()) {
 
@@ -59,35 +70,41 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			}
 
 		} catch (NotFoundException | CannotCompileException e) {
-			throw new CannotBuildClassException();
+			throw new CannotBuildClassException(e.getMessage());
 		}
 		try {
 			return hyalineProxyClass.toClass();
 		} catch (CannotCompileException e) {
 			e.printStackTrace();
-			throw new CannotBuildClassException();
+			throw new CannotBuildClassException(e.getMessage());
 		}
 	}
 
 	private CtField createFieldFromDescription(ClassPool classPool,
 			ConstPool constpool, FieldDescription field)
-			throws CannotCompileException, NotFoundException {
-		CtField ctField = CtField.make("private " + field.getField().getClass().getName() + " " + field.getField().getName() + ";",
+			throws CannotCompileException, NotFoundException,
+			CannotBuildClassException {
+		CtField ctField = CtField.make("private "
+				+ field.getField().getClass().getName() + " "
+				+ field.getField().getName() + ";",
 				classPool.get(field.getField().getClass().getName()));
-		if (field.getAnnotations() != null
-				&& field.getAnnotations().size() > 0) {
-			AnnotationsAttribute attr = new AnnotationsAttribute(
-					constpool, AnnotationsAttribute.visibleTag);
-			for (java.lang.annotation.Annotation annotation : field.getAnnotations()) {
-				Annotation annotationCopy = new Annotation(annotation.annotationType().getName(), constpool);
-				for (Method m : annotation.annotationType().getDeclaredMethods()) {
-					System.out.println(m.getName());
-				}
+		if (field.getAnnotations() != null && field.getAnnotations().size() > 0) {
+			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
+					AnnotationsAttribute.visibleTag);
+			for (java.lang.annotation.Annotation annotation : field
+					.getAnnotations()) {
+				Annotation annotationCopy = JavassistUtils.createJavassistAnnotation(
+						constpool, annotation);
+				attr.addAnnotation(annotationCopy);
 			}
+			ctField.getFieldInfo().addAttribute(attr);
 		}
 		return ctField;
 	}
 
+	
+
+	
 	private CtMethod createSetter(FieldDescription field) {
 		// TODO Auto-generated method stub
 		return null;

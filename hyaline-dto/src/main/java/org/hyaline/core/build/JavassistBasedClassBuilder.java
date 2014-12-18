@@ -1,42 +1,30 @@
 package org.hyaline.core.build;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtMethod;
+import javassist.CtNewMethod;
 import javassist.NotFoundException;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
-import javassist.bytecode.annotation.BooleanMemberValue;
-import javassist.bytecode.annotation.ByteMemberValue;
-import javassist.bytecode.annotation.CharMemberValue;
-import javassist.bytecode.annotation.DoubleMemberValue;
-import javassist.bytecode.annotation.FloatMemberValue;
-import javassist.bytecode.annotation.IntegerMemberValue;
-import javassist.bytecode.annotation.LongMemberValue;
-import javassist.bytecode.annotation.MemberValue;
-import javassist.bytecode.annotation.ShortMemberValue;
-import javassist.bytecode.annotation.StringMemberValue;
 
 import org.hyaline.core.ClassBuilder;
-import org.hyaline.core.InterfaceImplementationStrategy;
-import org.hyaline.core.ProxyStrategy;
 import org.hyaline.core.exception.CannotBuildClassException;
+import org.hyaline.core.exception.FieldNotFoundException;
 import org.hyaline.core.reflect.DTODescription;
 import org.hyaline.core.reflect.FieldDescription;
+import org.hyaline.core.reflect.MethodDescription;
 
 public class JavassistBasedClassBuilder implements ClassBuilder {
 
 	@Override
-	public Class<?> buildClass(DTODescription description,
-			ProxyStrategy strategy,
-			InterfaceImplementationStrategy interfaceImplementationStrategy)
+	public Class<?> buildClass(DTODescription description)
 			throws CannotBuildClassException {
 		ClassPool classPool = ClassPool.getDefault();
 		Class<?> entityClass = description.getType();
@@ -57,7 +45,14 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			ClassFile ccFile = hyalineProxyClass.getClassFile();
 			ConstPool constpool = ccFile.getConstPool();
 
-			// TODO Add annotations to Class
+			// Add annotations to Class
+			addClassAnnotations(description, hyalineProxyClass, constpool);
+
+			// Add a field for target
+			CtField targetField = CtField.make(
+					"private " + description.getTarget().getClass().getName()
+							+ " target;", hyalineProxyClass);
+			hyalineProxyClass.addField(targetField);
 
 			// Here I create the necessary fields
 			for (FieldDescription field : description.getFields().values()) {
@@ -66,17 +61,35 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 
 				hyalineProxyClass.addField(ctField);
 
-				// TODO handle here the generation of getters and setters for
-				// new fields
-				// if (field.isFromTemplate()) {
-				//
-				// CtMethod getter = createGetter(field);
-				// CtMethod setter = createSetter(field);
-				// }
+				// Generate a getter and a setter for fields defined in
+				// template
+				if (field.isFromTemplate()) {
+					CtMethod getter = createGetter(field, hyalineProxyClass);
+					hyalineProxyClass.addMethod(getter);
+					CtMethod setter = createSetter(field, hyalineProxyClass);
+					hyalineProxyClass.addMethod(setter);
+				}
 			}
 
-			//TODO Handle here all the methods
-			
+			// TODO Handle here all the methods
+			for (MethodDescription method : description.getMethods().values()) {
+				// Handle only getters and setters
+				String methodName = method.getMethod().getName();
+				if (methodName.startsWith("get")
+						|| methodName.startsWith("set")
+						|| methodName.startsWith("is")) {
+					CtMethod ctMethod;
+					try {
+						ctMethod = createMethodFromDescription(classPool,
+								constpool, method, hyalineProxyClass,
+								description);
+						hyalineProxyClass.addMethod(ctMethod);
+					} catch (FieldNotFoundException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
 		} catch (NotFoundException | CannotCompileException e) {
 			e.printStackTrace();
 			throw new CannotBuildClassException(e.getMessage());
@@ -89,12 +102,72 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		}
 	}
 
+	private CtMethod createMethodFromDescription(ClassPool classPool,
+			ConstPool constpool, MethodDescription method,
+			CtClass hyalineProxyClass, DTODescription description)
+			throws FieldNotFoundException, CannotCompileException, NotFoundException, CannotBuildClassException {
+		String methodName = method.getMethod().getName();
+		
+		// reconstruct field to be accessed based on method name
+		String fieldName = null;
+		if (methodName.startsWith("is")) {
+			fieldName = methodName.substring(2, 3).toLowerCase()
+					+ methodName.substring(3);
+		} else {
+			fieldName = methodName.substring(3, 4).toLowerCase()
+					+ methodName.substring(4);
+		}
+		FieldDescription field = description.getField(fieldName);
+		if (field == null) {
+			throw new FieldNotFoundException("Found method named " + methodName
+					+ " but no field named " + fieldName);
+		}
+		
+		// create a getter or a setter based on method name
+		CtMethod ctMethod = null;
+		if (methodName.startsWith("is") || methodName.startsWith("get")) {
+			ctMethod = createGetter(field, hyalineProxyClass);
+		} else {
+			ctMethod = createSetter(field, hyalineProxyClass);
+		}
+		
+		// finally copy annotations
+		if (method.getAnnotations() != null && method.getAnnotations().size() > 0) {
+			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
+					AnnotationsAttribute.visibleTag);
+			for (java.lang.annotation.Annotation annotation : method
+					.getAnnotations()) {
+				Annotation annotationCopy = JavassistUtils
+						.createJavassistAnnotation(constpool, annotation);
+				attr.addAnnotation(annotationCopy);
+			}
+			ctMethod.getMethodInfo().addAttribute(attr);
+		}
+		return ctMethod;
+	}
+
+	private void addClassAnnotations(DTODescription description,
+			CtClass hyalineProxyClass, ConstPool constpool)
+			throws CannotBuildClassException {
+		if (description.getAnnotations() != null) {
+			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
+					AnnotationsAttribute.visibleTag);
+			for (java.lang.annotation.Annotation annotation : description
+					.getAnnotations()) {
+				Annotation annotationCopy = JavassistUtils
+						.createJavassistAnnotation(constpool, annotation);
+				attr.addAnnotation(annotationCopy);
+			}
+			hyalineProxyClass.getClassFile().addAttribute(attr);
+		}
+	}
+
 	private CtField createFieldFromDescription(ClassPool classPool,
 			ConstPool constpool, FieldDescription field,
 			CtClass hyalineProxyClass) throws CannotCompileException,
 			NotFoundException, CannotBuildClassException {
 		CtField ctField = CtField.make("private "
-				+ field.getField().getClass().getName() + " "
+				+ field.getField().getType().getName() + " "
 				+ field.getField().getName() + ";", hyalineProxyClass);
 		if (field.getAnnotations() != null && field.getAnnotations().size() > 0) {
 			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
@@ -110,14 +183,59 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		return ctField;
 	}
 
-	private CtMethod createSetter(FieldDescription field) {
-		// TODO Auto-generated method stub
-		return null;
+	private CtMethod createSetter(FieldDescription field,
+			CtClass hyalineProxyClass) throws CannotCompileException,
+			NotFoundException {
+		String fieldName = field.getField().getName();
+		String methodName = "set" + fieldName.substring(0, 1).toUpperCase()
+				+ fieldName.substring(1);
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("{");
+		if (!field.isFromTemplate() && !field.isInitialized()) {
+			buffer.append("target.").append(methodName).append("($1);");
+		}
+		buffer.append("this.").append(fieldName).append(" = $1;}");
+		CtClass returnType = ClassPool.getDefault().get("void");
+		String methodBody = buffer.toString();
+		CtMethod method = CtNewMethod.make(
+				Modifier.PUBLIC,
+				returnType,
+				methodName,
+				new CtClass[] { ClassPool.getDefault().get(
+						field.getField().getType().getName()) },
+				new CtClass[] {}, methodBody, hyalineProxyClass);
+		return method;
 	}
 
-	private CtMethod createGetter(FieldDescription field) {
-		// TODO Auto-generated method stub
-		return null;
+	private CtMethod createGetter(FieldDescription field,
+			CtClass hyalineProxyClass) throws CannotCompileException,
+			NotFoundException {
+		String fieldName = field.getField().getName();
+		String methodName = null;
+		String prefix = null;
+		String fieldTypeName = field.getField().getType().getName();
+		if (fieldTypeName.equals("java.lang.Boolean")
+				|| fieldTypeName.equals("boolean")) {
+			prefix = "is";
+		} else {
+			prefix = "get";
+		}
+		methodName = prefix + fieldName.substring(0, 1).toUpperCase()
+				+ fieldName.substring(1);
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("{");
+		if (!field.isFromTemplate() && !field.isInitialized()) {
+			buffer.append("this.").append(fieldName).append(" = target.")
+					.append(methodName).append("();");
+		}
+		buffer.append("return this.").append(fieldName).append(";}");
+		CtClass returnType = ClassPool.getDefault().get(
+				field.getField().getType().getName());
+		String methodBody = buffer.toString();
+		CtMethod method = CtNewMethod.make(Modifier.PUBLIC, returnType,
+				methodName, new CtClass[] {}, new CtClass[] {}, methodBody,
+				hyalineProxyClass);
+		return method;
 	}
 
 }

@@ -4,12 +4,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 
-import org.hyaline.core.InterfaceImplementationStrategy;
+public class DoNothingImplementationStrategy {
 
-public class DoNothingImplementationStrategy implements
-		InterfaceImplementationStrategy {
-
-	@Override
 	public String getImplementationFor(Object target, Method method) {
 		StringBuffer buffer = new StringBuffer();
 
@@ -27,7 +23,7 @@ public class DoNothingImplementationStrategy implements
 		return buffer.toString();
 	}
 
-	@Override
+
 	public String getImplementationBodyFor(Object target, Method method) {
 		StringBuffer buffer = new StringBuffer();
 		writeBody(method, buffer);

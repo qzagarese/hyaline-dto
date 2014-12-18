@@ -9,7 +9,7 @@ public class MethodDescription {
 
 	private Method method;
 
-	private List<Annotation> annotations;
+	private List<Annotation> annotations = new ArrayList<Annotation>();
 
 	public Method getMethod() {
 		return method;
@@ -28,9 +28,6 @@ public class MethodDescription {
 	}
 
 	public void addAnnotation(Annotation annotation) {
-		if (annotations == null) {
-			annotations = new ArrayList<Annotation>();
-		}
 		annotations.add(annotation);
 	}
 

@@ -14,7 +14,7 @@ public class DTODescription {
 
 	private List<Class<?>> implementedInterfaces;
 
-	private List<Annotation> annotations;
+	private List<Annotation> annotations = new ArrayList<Annotation>();
 
 	private Map<String, FieldDescription> fields = new HashMap<String, FieldDescription>();
 
@@ -42,9 +42,6 @@ public class DTODescription {
 	}
 
 	public void addAnnotation(Annotation annotation) {
-		if (annotations == null) {
-			annotations = new ArrayList<Annotation>();
-		}
 		annotations.add(annotation);
 	}
 
@@ -54,6 +51,12 @@ public class DTODescription {
 
 	public void setFields(Map<String, FieldDescription> fields) {
 		this.fields = fields;
+	}
+
+	
+	
+	public Map<String, MethodDescription> getMethods() {
+		return methods;
 	}
 
 	public void setMethods(Map<String, MethodDescription> methods) {

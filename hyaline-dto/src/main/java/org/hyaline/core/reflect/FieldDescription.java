@@ -9,11 +9,11 @@ public class FieldDescription {
 
 	private Field field;
 	
-	private boolean injectable;
-	
+	private boolean initialized;
+
 	private boolean fromTemplate = false;
 	
-	private List<Annotation> annotations;
+	private List<Annotation> annotations = new ArrayList<Annotation>();
 
 	public Field getField() {
 		return field;
@@ -23,12 +23,12 @@ public class FieldDescription {
 		this.field = field;
 	}
 
-	public boolean isInjectable() {
-		return injectable;
+	public boolean isInitialized() {
+		return initialized;
 	}
 
-	public void setInjectable(boolean injectable) {
-		this.injectable = injectable;
+	public void setInitialized(boolean initialized) {
+		this.initialized = initialized;
 	}
 
 	public List<Annotation> getAnnotations() {
@@ -40,9 +40,6 @@ public class FieldDescription {
 	}
 	
 	public void addAnnotation(Annotation annotation) {
-		if (annotations == null) {
-			annotations = new ArrayList<Annotation>();
-		}
 		annotations.add(annotation);
 	}
 

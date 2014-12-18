@@ -16,15 +16,6 @@ public interface HyalineProxyFactory {
 
 	void setClassBuilder(ClassBuilder builder);
 
-	ProxyStrategy getProxyStrategy();
-
-	void setProxyStrategy(ProxyStrategy proxyStrategy);
-
-	InterfaceImplementationStrategy getInterfaceImplementationStrategy();
-
-	void setInterfaceImplementationStrategy(
-			InterfaceImplementationStrategy interfaceImplementationStrategy);
-	
 	ClassRepository<String, Class<?>> getClassRepository();
 	
 	void setClassRepository(ClassRepository<String, Class<?>> classRepository);

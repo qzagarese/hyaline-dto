@@ -5,6 +5,6 @@ import org.hyaline.core.reflect.DTODescription;
 
 public interface ClassBuilder {
 
-	Class<?> buildClass(DTODescription description, ProxyStrategy strategy, InterfaceImplementationStrategy interfaceImplementationStrategy) throws CannotBuildClassException;
+	Class<?> buildClass(DTODescription description) throws CannotBuildClassException;
 	
 }

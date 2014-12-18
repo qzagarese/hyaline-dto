@@ -11,8 +11,6 @@ import org.hyaline.api.HyalineProxy;
 import org.hyaline.core.ClassBuilder;
 import org.hyaline.core.ClassRepository;
 import org.hyaline.core.HyalineProxyFactory;
-import org.hyaline.core.InterfaceImplementationStrategy;
-import org.hyaline.core.ProxyStrategy;
 import org.hyaline.core.build.JavassistBasedClassBuilder;
 import org.hyaline.core.exception.CannotBuildClassException;
 import org.hyaline.core.exception.CannotInstantiateProxyException;
@@ -24,10 +22,6 @@ import org.hyaline.exception.DTODefinitionException;
 public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
 	private ClassBuilder classBuilder = new JavassistBasedClassBuilder();
-
-	private ProxyStrategy proxyStrategy = new NOPProxyStrategy();
-
-	private InterfaceImplementationStrategy interfaceImplementationStrategy = new HyalineProxyImplementationStrategy();
 
 	private ClassRepository<String, Class<?>> classRepository = new BaseClassRepository();
 
@@ -44,26 +38,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		this.classRepository = classRepository;
 	}
 
-	@Override
-	public InterfaceImplementationStrategy getInterfaceImplementationStrategy() {
-		return interfaceImplementationStrategy;
-	}
-
-	@Override
-	public void setInterfaceImplementationStrategy(
-			InterfaceImplementationStrategy interfaceImplementationStrategy) {
-		this.interfaceImplementationStrategy = interfaceImplementationStrategy;
-	}
-
-	@Override
-	public ProxyStrategy getProxyStrategy() {
-		return proxyStrategy;
-	}
-
-	@Override
-	public void setProxyStrategy(ProxyStrategy proxyStrategy) {
-		this.proxyStrategy = proxyStrategy;
-	}
+	
 
 	@Override
 	public ClassBuilder getClassBuilder() {
@@ -92,7 +67,8 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		// check if a proxy definition for the template class already exists
 		Class<?> templateClass = getTemplateClass(config);
 		if (templateClass != config.getClass()) {
-			config = findTemplateInstance(templateClass, config.getClass(), config);
+			config = findTemplateInstance(templateClass, config.getClass(),
+					config);
 			if (config == null) {
 				throw new DTODefinitionException(
 						"Could not find an initialized field of type "
@@ -139,7 +115,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			Class<?> dtoClass, Object config) {
 		Object value = null;
 		for (Field f : dtoClass.getDeclaredFields()) {
-			if(f.getType().equals(templateClass)){
+			if (f.getType().equals(templateClass)) {
 				boolean accessible = f.isAccessible();
 				f.setAccessible(true);
 				try {
@@ -168,8 +144,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			throws CannotInstantiateProxyException {
 		Class<?> proxyClass = null;
 		try {
-			proxyClass = classBuilder.buildClass(description, proxyStrategy,
-					interfaceImplementationStrategy);
+			proxyClass = classBuilder.buildClass(description);
 		} catch (CannotBuildClassException e) {
 			throw new CannotInstantiateProxyException();
 		}
@@ -190,7 +165,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		Class<?> targetType = description.getType();
 
 		for (Field f : dtoType.getDeclaredFields()) {
-			// avoid treating anonymous classes as fields
+			// avoid treating references to outer classes as fields
 			if (!f.getName().startsWith("this$")) {
 				FieldDescription desc = handleFieldFromDTO(config, f,
 						targetType);
@@ -256,7 +231,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			e.printStackTrace();
 			throw new DTODefinitionException(
 					"You cannot define new methods in the template. "
-							+ "You can only declare an abstract method matching a "
+							+ "You can only re-define a method matching a "
 							+ "method present in the target class and re-define its "
 							+ "annotation-based configuration. "
 							+ "You can, otherwise, define a new field and Hyaline will "
@@ -288,7 +263,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		if (dtoField == null) {
 			desc = new FieldDescription();
 			desc.setField(f);
-			desc.setInjectable(false);
+			desc.setInitialized(false);
 			if (!override) {
 				// if there is no field with this name in the DTO
 				// and we start from the entity class, copy
@@ -318,8 +293,8 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 	private FieldDescription handleFieldFromDTO(Object config, Field f,
 			Class<?> targetType) {
 		FieldDescription desc = new FieldDescription();
-		boolean injectable = isFieldInjectable(config, f);
-		desc.setInjectable(injectable);
+		boolean initialized = isFieldInitialized(config, f);
+		desc.setInitialized(initialized);
 		desc.setField(f);
 		try {
 			targetType.getDeclaredField(f.getName());
@@ -337,7 +312,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return desc;
 	}
 
-	private boolean isFieldInjectable(Object dto, Field f) {
+	private boolean isFieldInitialized(Object dto, Field f) {
 		boolean accessible = f.isAccessible();
 		f.setAccessible(true);
 		Object value = null;

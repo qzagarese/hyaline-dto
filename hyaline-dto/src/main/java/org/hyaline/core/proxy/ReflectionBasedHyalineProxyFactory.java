@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hyaline.api.DTO;
-import org.hyaline.api.HyalineProxy;
 import org.hyaline.core.ClassBuilder;
 import org.hyaline.core.ClassRepository;
 import org.hyaline.core.HyalineProxyFactory;
@@ -126,7 +125,13 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			if (field.isFromTemplate() || field.isInitialized()) {
 				value = getFieldValue(field.getField(), dtoTemplate);
 			} else {
-				value = getFieldValue(field.getField(), description.getTarget());
+				// if the template redefines the field but does not initializes it
+				// retrieve the corresponding field from target class and get its value
+				Field f = field.getField();
+				if(!f.getDeclaringClass().equals(description.getType())){
+					f = description.getType().getDeclaredField(f.getName());
+				}
+				value = getFieldValue(f, description.getTarget());
 			}
 			injectField(proxyField, proxy, value);
 		}
@@ -193,7 +198,6 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 	private DTODescription createDescription(Object entity, Object config,
 			boolean override) throws DTODefinitionException {
 		DTODescription description = new DTODescription(entity);
-		description.addImplementedInterface(HyalineProxy.class);
 		if (override) {
 			getClassAnnotationsFromDTO(config, description);
 		} else {

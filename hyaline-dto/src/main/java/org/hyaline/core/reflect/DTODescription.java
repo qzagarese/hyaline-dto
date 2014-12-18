@@ -12,7 +12,7 @@ public class DTODescription {
 
 	private final Class<?> type;
 
-	private List<Class<?>> implementedInterfaces;
+	private List<Class<?>> implementedInterfaces = new ArrayList<Class<?>>();
 
 	private List<Annotation> annotations = new ArrayList<Annotation>();
 

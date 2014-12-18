@@ -105,9 +105,10 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	private CtMethod createMethodFromDescription(ClassPool classPool,
 			ConstPool constpool, MethodDescription method,
 			CtClass hyalineProxyClass, DTODescription description)
-			throws FieldNotFoundException, CannotCompileException, NotFoundException, CannotBuildClassException {
+			throws FieldNotFoundException, CannotCompileException,
+			NotFoundException, CannotBuildClassException {
 		String methodName = method.getMethod().getName();
-		
+
 		// reconstruct field to be accessed based on method name
 		String fieldName = null;
 		if (methodName.startsWith("is")) {
@@ -122,7 +123,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			throw new FieldNotFoundException("Found method named " + methodName
 					+ " but no field named " + fieldName);
 		}
-		
+
 		// create a getter or a setter based on method name
 		CtMethod ctMethod = null;
 		if (methodName.startsWith("is") || methodName.startsWith("get")) {
@@ -130,9 +131,10 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		} else {
 			ctMethod = createSetter(field, hyalineProxyClass);
 		}
-		
+
 		// finally copy annotations
-		if (method.getAnnotations() != null && method.getAnnotations().size() > 0) {
+		if (method.getAnnotations() != null
+				&& method.getAnnotations().size() > 0) {
 			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
 					AnnotationsAttribute.visibleTag);
 			for (java.lang.annotation.Annotation annotation : method
@@ -191,9 +193,13 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 				+ fieldName.substring(1);
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("{");
+		// if this method overrides a method from the entity class
+		// and the field has not been initialized in the template
+		// invoke the superclass method first
 		if (!field.isFromTemplate() && !field.isInitialized()) {
 			buffer.append("target.").append(methodName).append("($1);");
 		}
+		// assign the argument value to the field
 		buffer.append("this.").append(fieldName).append(" = $1;}");
 		CtClass returnType = ClassPool.getDefault().get("void");
 		String methodBody = buffer.toString();
@@ -224,10 +230,15 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 				+ fieldName.substring(1);
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("{");
+		// if this method overrides a method from the entity class
+		// and the field has not been initialized in the template
+		// invoke the superclass method first and assign the returned
+		// value to the local field
 		if (!field.isFromTemplate() && !field.isInitialized()) {
 			buffer.append("this.").append(fieldName).append(" = target.")
 					.append(methodName).append("();");
 		}
+		// return the value of the corresponding field
 		buffer.append("return this.").append(fieldName).append(";}");
 		CtClass returnType = ClassPool.getDefault().get(
 				field.getField().getType().getName());

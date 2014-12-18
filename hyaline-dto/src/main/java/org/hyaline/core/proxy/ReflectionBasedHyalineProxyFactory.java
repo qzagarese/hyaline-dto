@@ -38,8 +38,6 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		this.classRepository = classRepository;
 	}
 
-	
-
 	@Override
 	public ClassBuilder getClassBuilder() {
 		return classBuilder;
@@ -62,14 +60,14 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return create(entity, config, false);
 	}
 
-	private <T> Object create(T entity, Object config, boolean override)
+	private <T> Object create(T entity, Object dtoTemplate, boolean override)
 			throws CannotInstantiateProxyException, DTODefinitionException {
 		// check if a proxy definition for the template class already exists
-		Class<?> templateClass = getTemplateClass(config);
-		if (templateClass != config.getClass()) {
-			config = findTemplateInstance(templateClass, config.getClass(),
-					config);
-			if (config == null) {
+		Class<?> templateClass = getTemplateClass(dtoTemplate);
+		if (templateClass != dtoTemplate.getClass()) {
+			dtoTemplate = findTemplateInstance(templateClass,
+					dtoTemplate.getClass(), dtoTemplate);
+			if (dtoTemplate == null) {
 				throw new DTODefinitionException(
 						"Could not find an initialized field of type "
 								+ templateClass.getName()
@@ -86,7 +84,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		// if not, create a description for the proxy definition and save it for
 		// future invocations
 		if (description == null) {
-			description = createDescription(entity, config, override);
+			description = createDescription(entity, dtoTemplate, override);
 			dtoDescriptions.put(templateClass.getName(), description);
 		}
 
@@ -102,13 +100,54 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		Object proxy = null;
 		try {
 			proxy = proxyClass.newInstance();
-			// TODO handle here fields where to inject values
-		} catch (InstantiationException | IllegalAccessException e) {
+			injectTarget(proxy, description);
+			injectAllFields(proxy, description, dtoTemplate);
+		} catch (InstantiationException | IllegalAccessException
+				| NoSuchFieldException | SecurityException e) {
 			e.printStackTrace();
 			throw new CannotInstantiateProxyException();
 		}
 
 		return proxy;
+	}
+
+	private void injectTarget(Object proxy, DTODescription description)
+			throws NoSuchFieldException, SecurityException,
+			IllegalArgumentException, IllegalAccessException {
+		Field field = proxy.getClass().getDeclaredField("target");
+		injectField(field, proxy, description.getTarget());
+	}
+
+	private void injectAllFields(Object proxy, DTODescription description,
+			Object dtoTemplate) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		for (FieldDescription field : description.getFields().values()) {
+			Field proxyField = proxy.getClass().getDeclaredField(field.getField().getName());
+			Object value = null;
+			if (field.isFromTemplate() || field.isInitialized()) {
+				value = getFieldValue(field.getField(), dtoTemplate);
+			} else {
+				value = getFieldValue(field.getField(), description.getTarget());
+			}
+			injectField(proxyField, proxy, value);
+		}
+	}
+
+	private Object getFieldValue(Field field, Object instance)
+			throws IllegalArgumentException, IllegalAccessException {
+		Object value = null;
+		boolean accessible = field.isAccessible();
+		field.setAccessible(true);
+		value = field.get(instance);
+		field.setAccessible(accessible);
+		return value;
+	}
+
+	private void injectField(Field field, Object instance, Object value)
+			throws IllegalArgumentException, IllegalAccessException {
+		boolean accessible = field.isAccessible();
+		field.setAccessible(true);
+		field.set(instance, value);
+		field.setAccessible(accessible);
 	}
 
 	private Object findTemplateInstance(Class<?> templateClass,

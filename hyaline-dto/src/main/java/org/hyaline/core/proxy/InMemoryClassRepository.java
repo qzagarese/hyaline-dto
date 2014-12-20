@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.hyaline.core.ClassRepository;
 
-public class BaseClassRepository implements ClassRepository<String, Class<?>>{
+public class InMemoryClassRepository implements ClassRepository<String, Class<?>>{
 
 	private Map<String, Class<?>> repo = new HashMap<String, Class<?>>();
 	

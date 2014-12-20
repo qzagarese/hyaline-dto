@@ -71,7 +71,6 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 				}
 			}
 
-			// TODO Handle here all the methods
 			for (MethodDescription method : description.getMethods().values()) {
 				// Handle only getters and setters
 				String methodName = method.getMethod().getName();
@@ -220,8 +219,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		String methodName = null;
 		String prefix = null;
 		String fieldTypeName = field.getField().getType().getName();
-		if (fieldTypeName.equals("java.lang.Boolean")
-				|| fieldTypeName.equals("boolean")) {
+		if (fieldTypeName.equals("boolean")) {
 			prefix = "is";
 		} else {
 			prefix = "get";

@@ -32,6 +32,8 @@ public class Hyaline {
 	 *            the DTO configuration passed as an anonymous class.
 	 * @return a proxy that can be assigned to entity, that holds the values of
 	 *         entity and configured according to config
+	 * 
+	 * @throws HyalineException        
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T dtoFromScratch(T entity, DTO config) throws HyalineException {
@@ -58,6 +60,7 @@ public class Hyaline {
 	 *            the DTO configuration passed as an anonymous class.
 	 * @return a proxy that can be assigned to entity, that holds the values of
 	 *         entity and configured according to config
+	 * 
 	 * @throws HyalineException 
 	 */
 	@SuppressWarnings("unchecked")

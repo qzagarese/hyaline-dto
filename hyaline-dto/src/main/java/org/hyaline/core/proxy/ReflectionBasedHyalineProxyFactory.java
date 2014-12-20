@@ -16,13 +16,14 @@ import org.hyaline.core.exception.CannotInstantiateProxyException;
 import org.hyaline.core.reflect.DTODescription;
 import org.hyaline.core.reflect.FieldDescription;
 import org.hyaline.core.reflect.MethodDescription;
+import org.hyaline.core.reflect.ReflectionUtils;
 import org.hyaline.exception.DTODefinitionException;
 
 public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
 	private ClassBuilder classBuilder = new JavassistBasedClassBuilder();
 
-	private ClassRepository<String, Class<?>> classRepository = new BaseClassRepository();
+	private ClassRepository<String, Class<?>> classRepository = new InMemoryClassRepository();
 
 	private Map<String, DTODescription> dtoDescriptions = new HashMap<String, DTODescription>();
 
@@ -114,45 +115,31 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			throws NoSuchFieldException, SecurityException,
 			IllegalArgumentException, IllegalAccessException {
 		Field field = proxy.getClass().getDeclaredField("target");
-		injectField(field, proxy, description.getTarget());
+		ReflectionUtils.injectField(field, proxy, description.getTarget());
 	}
 
 	private void injectAllFields(Object proxy, DTODescription description,
-			Object dtoTemplate) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+			Object dtoTemplate) throws IllegalArgumentException,
+			IllegalAccessException, NoSuchFieldException, SecurityException {
 		for (FieldDescription field : description.getFields().values()) {
-			Field proxyField = proxy.getClass().getDeclaredField(field.getField().getName());
+			Field proxyField = proxy.getClass().getDeclaredField(
+					field.getField().getName());
 			Object value = null;
 			if (field.isFromTemplate() || field.isInitialized()) {
-				value = getFieldValue(field.getField(), dtoTemplate);
+				value = ReflectionUtils.getFieldValue(field.getField(), dtoTemplate);
 			} else {
-				// if the template redefines the field but does not initializes it
-				// retrieve the corresponding field from target class and get its value
+				// if the template redefines the field but does not initializes
+				// it
+				// retrieve the corresponding field from target class and get
+				// its value
 				Field f = field.getField();
-				if(!f.getDeclaringClass().equals(description.getType())){
+				if (!f.getDeclaringClass().equals(description.getType())) {
 					f = description.getType().getDeclaredField(f.getName());
 				}
-				value = getFieldValue(f, description.getTarget());
+				value = ReflectionUtils.getFieldValue(f, description.getTarget());
 			}
-			injectField(proxyField, proxy, value);
+			ReflectionUtils.injectField(proxyField, proxy, value);
 		}
-	}
-
-	private Object getFieldValue(Field field, Object instance)
-			throws IllegalArgumentException, IllegalAccessException {
-		Object value = null;
-		boolean accessible = field.isAccessible();
-		field.setAccessible(true);
-		value = field.get(instance);
-		field.setAccessible(accessible);
-		return value;
-	}
-
-	private void injectField(Field field, Object instance, Object value)
-			throws IllegalArgumentException, IllegalAccessException {
-		boolean accessible = field.isAccessible();
-		field.setAccessible(true);
-		field.set(instance, value);
-		field.setAccessible(accessible);
 	}
 
 	private Object findTemplateInstance(Class<?> templateClass,
@@ -336,7 +323,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 	private FieldDescription handleFieldFromDTO(Object config, Field f,
 			Class<?> targetType) {
 		FieldDescription desc = new FieldDescription();
-		boolean initialized = isFieldInitialized(config, f);
+		boolean initialized = ReflectionUtils.isFieldInitialized(config, f);
 		desc.setInitialized(initialized);
 		desc.setField(f);
 		try {
@@ -353,19 +340,6 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			}
 		}
 		return desc;
-	}
-
-	private boolean isFieldInitialized(Object dto, Field f) {
-		boolean accessible = f.isAccessible();
-		f.setAccessible(true);
-		Object value = null;
-		try {
-			value = f.get(dto);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		f.setAccessible(accessible);
-		return (value != null);
 	}
 
 	private void mergeClassAnnotationsFromDTO(Object config,

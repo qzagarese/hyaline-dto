@@ -1,8 +1,8 @@
-package org.hyaline.core;
+package org.hyalinedto.core;
 
-import org.hyaline.api.DTO;
-import org.hyaline.core.exception.CannotInstantiateProxyException;
-import org.hyaline.exception.DTODefinitionException;
+import org.hyalinedto.api.DTO;
+import org.hyalinedto.core.exception.CannotInstantiateProxyException;
+import org.hyalinedto.exception.DTODefinitionException;
 
 public interface HyalineProxyFactory {
 

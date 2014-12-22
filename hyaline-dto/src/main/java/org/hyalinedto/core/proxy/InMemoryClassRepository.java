@@ -1,11 +1,11 @@
-package org.hyaline.core.proxy;
+package org.hyalinedto.core.proxy;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.hyaline.core.ClassRepository;
+import org.hyalinedto.core.ClassRepository;
 
 public class InMemoryClassRepository implements ClassRepository<String, Class<?>>{
 

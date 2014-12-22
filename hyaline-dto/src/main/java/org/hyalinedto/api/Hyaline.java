@@ -1,10 +1,10 @@
-package org.hyaline.api;
+package org.hyalinedto.api;
 
-import org.hyaline.core.HyalineProxyFactory;
-import org.hyaline.core.exception.CannotInstantiateProxyException;
-import org.hyaline.core.proxy.ReflectionBasedHyalineProxyFactory;
-import org.hyaline.exception.DTODefinitionException;
-import org.hyaline.exception.HyalineException;
+import org.hyalinedto.core.HyalineProxyFactory;
+import org.hyalinedto.core.exception.CannotInstantiateProxyException;
+import org.hyalinedto.core.proxy.ReflectionBasedHyalineProxyFactory;
+import org.hyalinedto.exception.DTODefinitionException;
+import org.hyalinedto.exception.HyalineException;
 
 /** 
  * The Class Hyaline. It is the entry point for this library and allows you to

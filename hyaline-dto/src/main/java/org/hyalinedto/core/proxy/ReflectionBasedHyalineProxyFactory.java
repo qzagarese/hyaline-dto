@@ -1,4 +1,4 @@
-package org.hyaline.core.proxy;
+package org.hyalinedto.core.proxy;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -6,18 +6,18 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hyaline.api.DTO;
-import org.hyaline.core.ClassBuilder;
-import org.hyaline.core.ClassRepository;
-import org.hyaline.core.HyalineProxyFactory;
-import org.hyaline.core.build.JavassistBasedClassBuilder;
-import org.hyaline.core.exception.CannotBuildClassException;
-import org.hyaline.core.exception.CannotInstantiateProxyException;
-import org.hyaline.core.reflect.DTODescription;
-import org.hyaline.core.reflect.FieldDescription;
-import org.hyaline.core.reflect.MethodDescription;
-import org.hyaline.core.reflect.ReflectionUtils;
-import org.hyaline.exception.DTODefinitionException;
+import org.hyalinedto.api.DTO;
+import org.hyalinedto.core.ClassBuilder;
+import org.hyalinedto.core.ClassRepository;
+import org.hyalinedto.core.HyalineProxyFactory;
+import org.hyalinedto.core.build.JavassistBasedClassBuilder;
+import org.hyalinedto.core.exception.CannotBuildClassException;
+import org.hyalinedto.core.exception.CannotInstantiateProxyException;
+import org.hyalinedto.core.reflect.DTODescription;
+import org.hyalinedto.core.reflect.FieldDescription;
+import org.hyalinedto.core.reflect.MethodDescription;
+import org.hyalinedto.core.reflect.ReflectionUtils;
+import org.hyalinedto.exception.DTODefinitionException;
 
 public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 

@@ -1,4 +1,4 @@
-package org.hyaline.core.build;
+package org.hyalinedto.core.build;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -24,7 +24,7 @@ import javassist.bytecode.annotation.MemberValue;
 import javassist.bytecode.annotation.ShortMemberValue;
 import javassist.bytecode.annotation.StringMemberValue;
 
-import org.hyaline.core.exception.CannotBuildClassException;
+import org.hyalinedto.core.exception.CannotBuildClassException;
 
 public class JavassistUtils {
 

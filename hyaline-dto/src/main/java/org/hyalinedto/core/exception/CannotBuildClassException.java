@@ -1,4 +1,4 @@
-package org.hyaline.core.exception;
+package org.hyalinedto.core.exception;
 
 public class CannotBuildClassException extends Exception {
 

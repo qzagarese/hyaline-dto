@@ -1,4 +1,4 @@
-package org.hyaline.core.build;
+package org.hyalinedto.core.build;
 
 import java.lang.reflect.Modifier;
 
@@ -14,12 +14,12 @@ import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 
-import org.hyaline.core.ClassBuilder;
-import org.hyaline.core.exception.CannotBuildClassException;
-import org.hyaline.core.exception.FieldNotFoundException;
-import org.hyaline.core.reflect.DTODescription;
-import org.hyaline.core.reflect.FieldDescription;
-import org.hyaline.core.reflect.MethodDescription;
+import org.hyalinedto.core.ClassBuilder;
+import org.hyalinedto.core.exception.CannotBuildClassException;
+import org.hyalinedto.core.exception.FieldNotFoundException;
+import org.hyalinedto.core.reflect.DTODescription;
+import org.hyalinedto.core.reflect.FieldDescription;
+import org.hyalinedto.core.reflect.MethodDescription;
 
 public class JavassistBasedClassBuilder implements ClassBuilder {
 

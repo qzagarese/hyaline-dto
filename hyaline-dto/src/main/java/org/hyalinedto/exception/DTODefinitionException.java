@@ -1,4 +1,4 @@
-package org.hyaline.exception;
+package org.hyalinedto.exception;
 
 public class DTODefinitionException extends Exception {
 

@@ -188,9 +188,17 @@ Tah daaaaah:
 }
 ```
 
-## Hyaline is still a baby...
+## How to use it
 
-...so be good and please consider giving a feedback to help her growing up.
-She will be very soon available on Maven, so stay tuned :-)
+Hyaline DTO can be simply imported by adding the following Maven dependency:
 
+```xml
+
+<dependency>
+  <groupId>org.hyalinedto</groupId>
+  <artifactId>hyalinedto</artifactId>
+  <version>0.8-beta-1</version>
+</dependency>
+
+```
 

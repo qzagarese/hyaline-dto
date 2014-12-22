@@ -120,7 +120,7 @@ Output:
 ### 3. Ok I need the address, but just as a string.
 
 ```java
-Person person = methodReturningInitializedPerson();
+final Person person = methodReturningInitializedPerson();
 Person dto = Hyaline.dtoFromScratch(person, new DTO() {
 
 			@JsonIgnore
@@ -155,7 +155,7 @@ This is less elegant because of some limitations of the author and the Java comp
 Here is how to do it:
 
 ```java
-Person person = methodReturningInitializedPerson();
+final Person person = methodReturningInitializedPerson();
 Person dto = Hyaline.dtoFromScratch(person, new DTO() {
 
 			private MyTemplate t = new MyTemplate();

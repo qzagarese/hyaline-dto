@@ -202,3 +202,88 @@ Hyaline DTO can be simply imported by adding the following Maven dependency:
 
 ```
 
+## Hyaline DTO - what is it and what it is not.
+
+To better understand why you should use Hyaline, it is worth to explain what really Hyaline is, and a good starting point is to say what it is NOT.
+
+### It is not a serialization framework
+
+Hyaline is not a tool like Jackson, Kryo, Google JSON or Protocol Buffers. If you are a looking for a way to transform your Java entities into a text or binary representation, this is the wrong place, at least for now.
+
+### It is not a wrapper for serialization frameworks
+
+So you might think Hyaline wraps serialization frameworks and eases your work by defaulting reasonable settings. This approach is often useful, but it is not what Hyaline does.
+
+### OK, so what is it?!
+
+Hyaline is a tool to make objects representation dynamic, in order to better cope with quickly changing and contrasting requirements.
+The driving principle is that you should not write a new class if you only need to modify a small detail of your object representation.
+Moreover, mapping the domain entity to the data transfer object is boring, error prone and can require a lot of boilerplate code.
+Finally, you might need more than one representation of your domain entity.
+
+Think about a `User` class containing a list of `Order` entities.
+- You might decide to serialize the orders only when you need to populate a view showing all user's orders.
+- You might have to interact with a third party system requiring that your entity fields have specific names.
+- You might want to flatten your object graph by putting a string representation of complex attributes, because the remote endpoint (e.g. client) logic must be kept as simple as possible.
+
+### From scratch or from class?
+
+Hyaline provides `Configuration by Exception` for data transfer objects.
+If you need a small detail to be added or modified, you just provide that detail and this will not overwrite the general configuration.
+To this end, Hyaline provides two methods:
+- dtoFromScratch: if your domain entity has been annotated with any Java annotation for serialization configuration, your dto will be configured as if those annotations were not present.
+- dtoFromClass: if your domain entity has been annotated with any Java annotation for serialization configuration, your dto will inherit such configuration for every class element, except for those where your template provides a matching element (e.g. a field with the same name as one of the entity fields) annotated with a different instance of the same annotation type.
+
+An example can better explain the differences between the two methods.
+Consider the previously mentioned class `Person`. If field `firstName` is annotated as follows:
+
+```java
+private @JsonProperty("name") String firstName; 
+```
+then the json representation of a dto coming from the following invocation:
+
+```java
+Person dto = Hyaline.dtoFromScratch(person, new DTO() {});
+```
+would be:
+
+```javascript
+{
+	"firstName" : "John",
+	"lastName" : "Lennon",
+	// address here
+}
+```
+Annotation `@JsonProperty` is completely ignored.
+If the dto is created by invoking:
+
+```java
+Person dto = Hyaline.dtoFromClass(person, new DTO() {});
+```
+the json representation would be:
+
+```javascript
+{
+	"name" : "John",
+	"lastName" : "Lennon",
+	// address here
+}
+```
+Here annotation `@JsonProperty` has been applied.
+Finally, if the dto is created as follows:
+
+```java
+Person dto = Hyaline.dtoFromClass(person, new DTO() {
+	private @JsonProperty("theName") String firstName; 
+});
+```
+the json representation would be:
+
+```javascript
+{
+	"theName" : "John",
+	"lastName" : "Lennon",
+	// address here
+}
+```
+In this case, the `DTO` template provides a field named `firstName` that matches the one declared by class `Person`, so the instance of `@JsonProperty` overwrites the one specified in class `Person`.  

@@ -1,6 +1,30 @@
 Hyaline DTO - A Java library for dynamic creation of Data Transfer Objects 
 =====================
 
+## News
+
+### 22/01/2015
+
+Examples section added. 
+Added a Maven project showing how to use HyalineDTO with Spring Boot for creating dynamic bootable REST services. 
+
+### 22/12/2014 HyalineDTO is available on Maven Central
+
+You can use use HyalineDTO by importing the following Maven dependency:
+
+```xml
+
+<dependency>
+  <groupId>org.hyalinedto</groupId>
+  <artifactId>hyalinedto</artifactId>
+  <version>0.8-beta-1</version>
+</dependency>
+
+```
+
+
+
+
 Hyaline is a simple library for creating Data Transfer Objects (DTO) in a single instruction.
 It is designed to allow dynamic configuration of domain entities, so that you don't have to create new classes,
 manage the entity-to-dto mapping or design a DTO that fits most of your use cases.

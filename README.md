@@ -10,7 +10,7 @@ Added a Maven project showing how to use HyalineDTO with Spring Boot for creatin
 
 ### 22/12/2014 HyalineDTO is available on Maven Central
 
-You can use use HyalineDTO by importing the following Maven dependency:
+You can use HyalineDTO by importing the following Maven dependency:
 
 ```xml
 

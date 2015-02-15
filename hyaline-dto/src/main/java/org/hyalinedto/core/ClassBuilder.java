@@ -5,6 +5,6 @@ import org.hyalinedto.core.reflect.DTODescription;
 
 public interface ClassBuilder {
 
-	Class<?> buildClass(DTODescription description) throws CannotBuildClassException;
+	Class<?> buildClass(DTODescription description, String proxyClassName) throws CannotBuildClassException;
 	
 }

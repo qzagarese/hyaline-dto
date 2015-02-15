@@ -24,14 +24,11 @@ import org.hyalinedto.core.reflect.MethodDescription;
 public class JavassistBasedClassBuilder implements ClassBuilder {
 
 	@Override
-	public Class<?> buildClass(DTODescription description)
+	public Class<?> buildClass(DTODescription description, String proxyClassName)
 			throws CannotBuildClassException {
 		ClassPool classPool = ClassPool.getDefault();
 		Class<?> entityClass = description.getType();
-		CtClass hyalineProxyClass = classPool.makeClass(entityClass
-				.getSimpleName()
-				+ "$HyalineProxy$"
-				+ System.currentTimeMillis());
+		CtClass hyalineProxyClass = classPool.makeClass(proxyClassName);
 		try {
 
 			hyalineProxyClass
@@ -82,7 +79,10 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 						ctMethod = createMethodFromDescription(classPool,
 								constpool, method, hyalineProxyClass,
 								description);
-						hyalineProxyClass.addMethod(ctMethod);
+						if (ctMethod != null) {
+							// could correlate method name to accessed field
+							hyalineProxyClass.addMethod(ctMethod);
+						}
 					} catch (FieldNotFoundException e) {
 						e.printStackTrace();
 					}
@@ -117,33 +117,36 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			fieldName = methodName.substring(3, 4).toLowerCase()
 					+ methodName.substring(4);
 		}
+
 		FieldDescription field = description.getField(fieldName);
-		if (field == null) {
-			throw new FieldNotFoundException("Found method named " + methodName
-					+ " but no field named " + fieldName);
-		}
-
-		// create a getter or a setter based on method name
 		CtMethod ctMethod = null;
-		if (methodName.startsWith("is") || methodName.startsWith("get")) {
-			ctMethod = createGetter(field, hyalineProxyClass);
+
+		if (field != null) {
+			// the method name can be connected to a field name
+			// create a getter or a setter based on method name
+			if (methodName.startsWith("is") || methodName.startsWith("get")) {
+				ctMethod = createGetter(field, hyalineProxyClass);
+			} else {
+				ctMethod = createSetter(field, hyalineProxyClass);
+			}
+			// finally copy annotations
+			if (method.getAnnotations() != null
+					&& method.getAnnotations().size() > 0) {
+				AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
+						AnnotationsAttribute.visibleTag);
+				for (java.lang.annotation.Annotation annotation : method
+						.getAnnotations()) {
+					Annotation annotationCopy = JavassistUtils
+							.createJavassistAnnotation(constpool, annotation);
+					attr.addAnnotation(annotationCopy);
+				}
+				ctMethod.getMethodInfo().addAttribute(attr);
+			}
 		} else {
-			ctMethod = createSetter(field, hyalineProxyClass);
+			// cannot find correlation between this method and a field name.
+			// Ignore this method since it will be inherited by the proxy.
 		}
 
-		// finally copy annotations
-		if (method.getAnnotations() != null
-				&& method.getAnnotations().size() > 0) {
-			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
-					AnnotationsAttribute.visibleTag);
-			for (java.lang.annotation.Annotation annotation : method
-					.getAnnotations()) {
-				Annotation annotationCopy = JavassistUtils
-						.createJavassistAnnotation(constpool, annotation);
-				attr.addAnnotation(annotationCopy);
-			}
-			ctMethod.getMethodInfo().addAttribute(attr);
-		}
 		return ctMethod;
 	}
 

@@ -48,19 +48,8 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		this.classBuilder = classBuilder;
 	}
 
-	@Override
-	public <T> Object createFromScratch(T entity, DTO config)
-			throws CannotInstantiateProxyException, DTODefinitionException {
-		return create(entity, config, true);
-	}
 
-	@Override
-	public <T> Object createFromClass(T entity, DTO config)
-			throws CannotInstantiateProxyException, DTODefinitionException {
-		return create(entity, config, false);
-	}
-
-	private <T> Object create(T entity, Object dtoTemplate, boolean override)
+	public <T> Object create(T entity, Object dtoTemplate, boolean resetAnnotations, String proxyClassName)
 			throws CannotInstantiateProxyException, DTODefinitionException {
 		// check if a proxy definition for the template class already exists
 		Class<?> templateClass = getTemplateClass(dtoTemplate);
@@ -84,7 +73,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		// if not, create a description for the proxy definition and save it for
 		// future invocations
 		if (description == null) {
-			description = createDescription(entity, dtoTemplate, override);
+			description = createDescription(entity, dtoTemplate, resetAnnotations);
 			dtoDescriptions.put(templateClass.getName(), description);
 		}
 
@@ -92,7 +81,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		// repository
 		if (proxyClass == null) {
 			// build the proxy definition
-			proxyClass = buildProxyClass(description);
+			proxyClass = buildProxyClass(description, proxyClassName);
 		}
 		classRepository.put(templateClass.getName(), proxyClass);
 
@@ -171,11 +160,11 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return templateClass;
 	}
 
-	private Class<?> buildProxyClass(DTODescription description)
+	private Class<?> buildProxyClass(DTODescription description, String proxyClassName)
 			throws CannotInstantiateProxyException {
 		Class<?> proxyClass = null;
 		try {
-			proxyClass = classBuilder.buildClass(description);
+			proxyClass = classBuilder.buildClass(description, proxyClassName);
 		} catch (CannotBuildClassException e) {
 			throw new CannotInstantiateProxyException();
 		}

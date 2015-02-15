@@ -12,6 +12,7 @@
 
 	<properties>
 		<javassist.version>3.18.2-GA</javassist.version>
+		<junit.version>4.11</junit.version>
 	</properties>
 
 	<licenses>
@@ -37,6 +38,13 @@
 			<groupId>org.javassist</groupId>
 			<artifactId>javassist</artifactId>
 			<version>${javassist.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

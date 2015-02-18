@@ -1,5 +1,8 @@
 package org.hyalinedto.test.api;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.lang.reflect.Field;
 
 import org.hyalinedto.api.DTO;
@@ -11,8 +14,6 @@ import org.hyalinedto.test.domainclasses.Address;
 import org.hyalinedto.test.domainclasses.Person;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class DTOFromScratchTest {
 
@@ -54,14 +55,18 @@ public class DTOFromScratchTest {
 			NoSuchFieldException, SecurityException {
 		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
 
-			@TestFieldAnnotationWithAnnotationMember(testAnnotation = @TestFieldAnnotation)
+			@TestFieldAnnotationWithAnnotationMember(testAnnotation = @TestFieldAnnotation(intValue = 123))
 			private String firstName;
 
 		});
 		Field fn = dto.getClass().getDeclaredField("firstName");
-		TestFieldAnnotationWithAnnotationMember annotation = fn
+		TestFieldAnnotationWithAnnotationMember outer = fn
 				.getAnnotation(TestFieldAnnotationWithAnnotationMember.class);
-		assertNotNull(annotation);
+		TestFieldAnnotation testAnnotation = outer.testAnnotation();
+		assertNotNull(outer);
+		assertNotNull(testAnnotation);
+		assertEquals(123, testAnnotation.intValue());
+		
 	}
 
 	@Test

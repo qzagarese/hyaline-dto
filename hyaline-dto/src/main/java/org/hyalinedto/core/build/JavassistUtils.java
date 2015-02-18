@@ -5,8 +5,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import javassist.ClassPool;
-import javassist.NotFoundException;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 import javassist.bytecode.annotation.AnnotationMemberValue;
@@ -31,6 +29,7 @@ public class JavassistUtils {
 	public static Annotation createJavassistAnnotation(ConstPool constpool,
 			java.lang.annotation.Annotation annotation)
 			throws CannotBuildClassException {
+
 		Annotation annotationCopy = new Annotation(annotation.annotationType()
 				.getName(), constpool);
 		for (Method m : annotation.annotationType().getDeclaredMethods()) {
@@ -51,19 +50,31 @@ public class JavassistUtils {
 
 	public static MemberValue createMemberValue(Object value,
 			ConstPool constpool) {
+		Class<?> clazz = value.getClass();
 		MemberValue member = null;
+		boolean isAnnotation = false;
+		java.lang.annotation.Annotation annotation = null;
+		try {
+			annotation = (java.lang.annotation.Annotation) value;
+			isAnnotation = true;
+		} catch (ClassCastException cce) {
+			// it is not an annotation; this workaround is necessary because
+			// annotations
+			// can be implemented as java Proxies, so
+			// value.getClass().isAnnotation() is not going to work
+		}
 
-		if (value.getClass().isAnnotation()) {
+		if (isAnnotation) {
 			try {
-				member = new AnnotationMemberValue(
-						new Annotation(constpool, ClassPool.getDefault().get(
-								value.getClass().getName())), constpool);
-			} catch (NotFoundException e) {
+				//create annotations recursively
+				member = new AnnotationMemberValue(createJavassistAnnotation(
+						constpool, annotation), constpool);
+			} catch (CannotBuildClassException e) {
 				e.printStackTrace();
 			}
-		} else if (value.getClass().isArray()) {
-			member = new ArrayMemberValue(createMemberValue(value.getClass(),
-					constpool), constpool);
+		} else if (clazz.isArray()) {
+			member = new ArrayMemberValue(createMemberValue(clazz, constpool),
+					constpool);
 			Object[] valueArray = (Object[]) value;
 			List<MemberValue> members = new ArrayList<MemberValue>();
 			for (Object object : valueArray) {
@@ -71,7 +82,7 @@ public class JavassistUtils {
 			}
 			ArrayMemberValue arrayMemberValue = (ArrayMemberValue) member;
 			arrayMemberValue.setValue(members.toArray(new MemberValue[] {}));
-		} else if (value.getClass().isEnum()) {
+		} else if (clazz.isEnum()) {
 			Enum<?> enumValue = (Enum<?>) value;
 			int enumClassIndex = constpool.addUtf8Info(enumValue
 					.getDeclaringClass().getName());
@@ -79,7 +90,7 @@ public class JavassistUtils {
 			member = new EnumMemberValue(enumClassIndex, enumValueIndex,
 					constpool);
 		} else {
-			switch (value.getClass().getName()) {
+			switch (clazz.getName()) {
 			case "java.lang.Boolean":
 				member = new BooleanMemberValue((Boolean) value, constpool);
 				break;

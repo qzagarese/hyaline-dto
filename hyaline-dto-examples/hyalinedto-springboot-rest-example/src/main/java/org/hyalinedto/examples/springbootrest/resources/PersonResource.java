@@ -1,5 +1,7 @@
 package org.hyalinedto.examples.springbootrest.resources;
 
+import java.util.List;
+
 import org.hyalinedto.api.DTO;
 import org.hyalinedto.api.Hyaline;
 import org.hyalinedto.examples.springbootrest.domain.Address;
@@ -15,6 +17,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PersonResource {
 
 	final Person john;
+	
+	private int times = 0;
 
 	public PersonResource() {
 		john = new Person();
@@ -61,7 +65,20 @@ public class PersonResource {
 
 	@RequestMapping("/inlined")
 	public Person getInlined() throws HyalineException {
-		return Hyaline.dtoFromScratch(john, new DTO() {
+		double avg = 0;
+		for (double  d : john.getScores()) {
+			avg += d;
+		}
+		final double finalavg = avg / john.getScores().size();
+		return Hyaline.dtoFromClass(john, new DTO() {
+			
+			private Double average = finalavg;
+			
+			@JsonIgnore
+			private List<Double> scores;
+			
+			@JsonProperty
+			private int invocations = ++times;
 
 			@JsonIgnore
 			private Address address;

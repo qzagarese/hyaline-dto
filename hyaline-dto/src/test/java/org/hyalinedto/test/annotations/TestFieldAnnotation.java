@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TestFieldAnnotation {
 
+	public int intValue() default 1;
+	
 }

@@ -93,5 +93,18 @@ public class DTOFromScratchTest {
 		assertEquals("Ringo", dto.getFirstName());
 	}
 	
+	@Test
+	public void testWithArrayField() throws HyalineException{
+		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+
+			
+			@SuppressWarnings("unused")
+			private String[] colors = {"Black"};
+
+		});
+		assertEquals("Black", dto.getColors()[0]);
+	}
+	
+	
 	
 }

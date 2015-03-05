@@ -3,6 +3,7 @@ package org.hyalinedto.core.build;
 import java.lang.reflect.Modifier;
 
 import javassist.CannotCompileException;
+import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
@@ -28,22 +29,53 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		ClassPool classPool = ClassPool.getDefault();
 		Class<?> entityClass = description.getType();
 		CtClass hyalineProxyClass = classPool.makeClass(proxyClassName);
+
+		// avoid NotFoundException if possible
+		CtClass clazz = null;
 		try {
-
-			hyalineProxyClass.setSuperclass(classPool.get(entityClass.getName()));
-			for (Class<?> interfaceType : description.getImplementedInterfaces()) {
-				hyalineProxyClass.addInterface(ClassPool.getDefault().get(interfaceType.getName()));
+			clazz = classPool.get(entityClass.getName());
+		} catch (NotFoundException e) {
+			classPool.appendClassPath(new ClassClassPath(entityClass));
+			try {
+				clazz = classPool.get(entityClass.getName());
+			} catch (NotFoundException e1) {
+				throw new CannotBuildClassException(e1.getMessage());
 			}
+		}
 
-			ClassFile ccFile = hyalineProxyClass.getClassFile();
-			ConstPool constpool = ccFile.getConstPool();
+		try {
+			hyalineProxyClass.setSuperclass(clazz);
+		} catch (CannotCompileException e1) {
+			throw new CannotBuildClassException(e1.getMessage());
+		}
+		for (Class<?> interfaceType : description.getImplementedInterfaces()) {
+			CtClass anInterface = null;
+			// same here
+			try {
+				anInterface = classPool.get(interfaceType.getName());
+			} catch (NotFoundException e) {
+				classPool.appendClassPath(new ClassClassPath(interfaceType));
+				try {
+					anInterface = classPool.get(interfaceType.getName());
+				} catch (NotFoundException e2) {
+					throw new CannotBuildClassException(e2.getMessage());
+				}
+			}
+			hyalineProxyClass.addInterface(anInterface);
+		}
 
-			// Add annotations to Class
-			addClassAnnotations(description, hyalineProxyClass, constpool);
+		ClassFile ccFile = hyalineProxyClass.getClassFile();
+		ConstPool constpool = ccFile.getConstPool();
 
-			// Add a field for target
-			CtField targetField = CtField.make("private " + description.getTarget().getClass().getName() + " target;",
+		// Add annotations to Class
+		addClassAnnotations(description, hyalineProxyClass, constpool);
+
+		// Add a field for target
+		CtField targetField;
+		try {
+			targetField = CtField.make("private " + description.getTarget().getClass().getName() + " target;",
 			        hyalineProxyClass);
+
 			hyalineProxyClass.addField(targetField);
 
 			// Here I create the necessary fields
@@ -80,21 +112,15 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 				}
 			}
 
-		} catch (NotFoundException | CannotCompileException e) {
-			e.printStackTrace();
-			throw new CannotBuildClassException(e.getMessage());
-		}
-		try {
 			return hyalineProxyClass.toClass();
 		} catch (CannotCompileException e) {
-			e.printStackTrace();
 			throw new CannotBuildClassException(e.getMessage());
 		}
 	}
 
 	private CtMethod createMethodFromDescription(ClassPool classPool, ConstPool constpool, MethodDescription method,
 	        CtClass hyalineProxyClass, DTODescription description) throws FieldNotFoundException,
-	        CannotCompileException, NotFoundException, CannotBuildClassException {
+	        CannotCompileException, CannotBuildClassException {
 		String methodName = method.getMethod().getName();
 
 		// reconstruct field to be accessed based on method name
@@ -146,7 +172,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	}
 
 	private CtField createFieldFromDescription(ClassPool classPool, ConstPool constpool, FieldDescription field,
-	        CtClass hyalineProxyClass) throws CannotCompileException, NotFoundException, CannotBuildClassException {
+	        CtClass hyalineProxyClass) throws CannotCompileException, CannotBuildClassException {
 		String fieldTypeName = field.getField().getType().getCanonicalName();
 		CtField ctField = CtField.make("private " + fieldTypeName + " " + field.getField().getName() + ";",
 		        hyalineProxyClass);
@@ -161,10 +187,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		return ctField;
 	}
 
-	
-
-	private CtMethod createSetter(FieldDescription field, CtClass hyalineProxyClass) throws CannotCompileException,
-	        NotFoundException {
+	private CtMethod createSetter(FieldDescription field, CtClass hyalineProxyClass) throws CannotCompileException, CannotBuildClassException {
 		String fieldName = field.getField().getName();
 		String methodName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
 		StringBuffer buffer = new StringBuffer();
@@ -177,16 +200,32 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		}
 		// assign the argument value to the field
 		buffer.append("this.").append(fieldName).append(" = $1;}");
-		CtClass returnType = ClassPool.getDefault().get("void");
+		CtClass returnType = null;
+		ClassPool classPool = ClassPool.getDefault();
+		try {
+			returnType = classPool.get("void");
+		} catch (NotFoundException e) {
+			e.printStackTrace();
+		}
 		String methodBody = buffer.toString();
-		CtMethod method = CtNewMethod.make(Modifier.PUBLIC, returnType, methodName, new CtClass[] { ClassPool
-		        .getDefault().get(field.getField().getType().getName()) }, new CtClass[] {}, methodBody,
-		        hyalineProxyClass);
+		CtClass parameter = null;
+		try {
+			parameter = classPool.get(field.getField().getType().getName());
+		} catch (NotFoundException e) {
+			classPool.appendClassPath(new ClassClassPath(field.getField().getType()));
+			try {
+				parameter = classPool.get(field.getField().getType().getName());
+			} catch (NotFoundException e2) {
+				throw new CannotBuildClassException(e2.getMessage());
+			}
+		}
+		CtMethod method = CtNewMethod.make(Modifier.PUBLIC, returnType, methodName, new CtClass[] { parameter },
+		        new CtClass[] {}, methodBody, hyalineProxyClass);
 		return method;
 	}
 
 	private CtMethod createGetter(FieldDescription field, CtClass hyalineProxyClass) throws CannotCompileException,
-	        NotFoundException {
+	        CannotBuildClassException {
 		String fieldName = field.getField().getName();
 		String methodName = null;
 		String prefix = null;
@@ -208,7 +247,18 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		}
 		// return the value of the corresponding field
 		buffer.append("return this.").append(fieldName).append(";}");
-		CtClass returnType = ClassPool.getDefault().get(field.getField().getType().getName());
+		ClassPool classPool = ClassPool.getDefault();
+		CtClass returnType = null;
+		try {
+			returnType = classPool.get(field.getField().getType().getName());
+		} catch (NotFoundException e) {
+			classPool.appendClassPath(new ClassClassPath(field.getField().getType()));
+			try {
+				returnType = classPool.get(field.getField().getType().getName());
+			} catch (NotFoundException e1) {
+				throw new CannotBuildClassException(e1.getMessage());
+			}
+		}
 		String methodBody = buffer.toString();
 		CtMethod method = CtNewMethod.make(Modifier.PUBLIC, returnType, methodName, new CtClass[] {}, new CtClass[] {},
 		        methodBody, hyalineProxyClass);

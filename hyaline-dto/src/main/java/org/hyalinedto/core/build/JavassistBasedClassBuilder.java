@@ -187,7 +187,8 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		return ctField;
 	}
 
-	private CtMethod createSetter(FieldDescription field, CtClass hyalineProxyClass) throws CannotCompileException, CannotBuildClassException {
+	private CtMethod createSetter(FieldDescription field, CtClass hyalineProxyClass) throws CannotCompileException,
+	        CannotBuildClassException {
 		String fieldName = field.getField().getName();
 		String methodName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
 		StringBuffer buffer = new StringBuffer();
@@ -196,7 +197,10 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		// and the field has not been initialized in the template
 		// invoke the superclass method first
 		if (!field.isFromTemplate() && !field.isInitialized()) {
+			// Check whether target is null to avoid NPE after deserialization
+			buffer.append("if(target != null) { ");
 			buffer.append("target.").append(methodName).append("($1);");
+			buffer.append("}");
 		}
 		// assign the argument value to the field
 		buffer.append("this.").append(fieldName).append(" = $1;}");
@@ -243,7 +247,10 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		// invoke the superclass method first and assign the returned
 		// value to the local field
 		if (!field.isFromTemplate() && !field.isInitialized()) {
+			// Check whether target is null to avoid NPE after deserialization
+			buffer.append("if(target != null) { ");
 			buffer.append("this.").append(fieldName).append(" = target.").append(methodName).append("();");
+			buffer.append("}");
 		}
 		// return the value of the corresponding field
 		buffer.append("return this.").append(fieldName).append(";}");

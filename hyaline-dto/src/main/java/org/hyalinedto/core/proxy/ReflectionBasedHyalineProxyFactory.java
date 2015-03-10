@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hyalinedto.api.DTO;
 import org.hyalinedto.core.ClassBuilder;
 import org.hyalinedto.core.ClassRepository;
 import org.hyalinedto.core.HyalineProxyFactory;
@@ -64,7 +63,6 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 			}
 		}
 
-		Class<?> proxyClass = classRepository.get(templateClass.getName());
 
 		// check if a DTO description for the template class already exists
 		DTODescription description = dtoDescriptions.get(templateClass
@@ -73,24 +71,26 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		// if not, create a description for the proxy definition and save it for
 		// future invocations
 		if (description == null) {
-			description = createDescription(entity, dtoTemplate, resetAnnotations);
+			description = createDescription(entity.getClass(), dtoTemplate, resetAnnotations);
 			dtoDescriptions.put(templateClass.getName(), description);
 		}
+		
+		Class<?> proxyClass = classRepository.get(templateClass.getName());
 
 		// if no proxy definition exists, create it and save it to the
 		// repository
 		if (proxyClass == null) {
 			// build the proxy definition
 			proxyClass = buildProxyClass(description, proxyClassName);
+			classRepository.put(templateClass.getName(), proxyClass);
 		}
-		classRepository.put(templateClass.getName(), proxyClass);
 
 		// finally, instantiate the proxy class
 		Object proxy = null;
 		try {
 			proxy = proxyClass.newInstance();
-			injectTarget(proxy, description);
-			injectAllFields(proxy, description, dtoTemplate);
+			injectTarget(proxy, description, entity);
+			injectAllFields(proxy, description, dtoTemplate, entity);
 		} catch (InstantiationException | IllegalAccessException
 				| NoSuchFieldException | SecurityException e) {
 			e.printStackTrace();
@@ -100,15 +100,15 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return proxy;
 	}
 
-	private void injectTarget(Object proxy, DTODescription description)
+	private void injectTarget(Object proxy, DTODescription description, Object target)
 			throws NoSuchFieldException, SecurityException,
 			IllegalArgumentException, IllegalAccessException {
 		Field field = proxy.getClass().getDeclaredField("target");
-		ReflectionUtils.injectField(field, proxy, description.getTarget());
+		ReflectionUtils.injectField(field, proxy, target);
 	}
 
 	private void injectAllFields(Object proxy, DTODescription description,
-			Object dtoTemplate) throws IllegalArgumentException,
+			Object dtoTemplate, Object target) throws IllegalArgumentException,
 			IllegalAccessException, NoSuchFieldException, SecurityException {
 		for (FieldDescription field : description.getFields().values()) {
 			Field proxyField = proxy.getClass().getDeclaredField(
@@ -125,7 +125,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 				if (!f.getDeclaringClass().equals(description.getType())) {
 					f = description.getType().getDeclaredField(f.getName());
 				}
-				value = ReflectionUtils.getFieldValue(f, description.getTarget());
+				value = ReflectionUtils.getFieldValue(f, target);
 			}
 			ReflectionUtils.injectField(proxyField, proxy, value);
 		}
@@ -172,9 +172,9 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return proxyClass;
 	}
 
-	private DTODescription createDescription(Object entity, Object config,
+	private DTODescription createDescription(Class<?> entityType, Object config,
 			boolean override) throws DTODefinitionException {
-		DTODescription description = new DTODescription(entity);
+		DTODescription description = new DTODescription(entityType);
 		if (override) {
 			getClassAnnotationsFromDTO(config, description);
 		} else {

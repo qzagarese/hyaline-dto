@@ -8,9 +8,7 @@ import java.util.Map;
 
 public class DTODescription {
 
-	private final Object target;
-
-	private final Class<?> type;
+	private Class<?> type;
 
 	private List<Class<?>> implementedInterfaces = new ArrayList<Class<?>>();
 
@@ -20,17 +18,12 @@ public class DTODescription {
 
 	private Map<String, MethodDescription> methods = new HashMap<String, MethodDescription>();
 
-	public DTODescription(Object target) {
-		this.target = target;
-		this.type = target.getClass();
+	public DTODescription(Class<?> type) {
+		this.type = type;
 	}
 
 	public Class<?> getType() {
 		return type;
-	}
-
-	public Object getTarget() {
-		return target;
 	}
 
 	public List<Annotation> getAnnotations() {
@@ -53,8 +46,6 @@ public class DTODescription {
 		this.fields = fields;
 	}
 
-	
-	
 	public Map<String, MethodDescription> getMethods() {
 		return methods;
 	}

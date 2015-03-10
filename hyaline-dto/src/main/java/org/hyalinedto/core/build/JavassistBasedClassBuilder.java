@@ -78,7 +78,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		// Add a field for target
 		CtField targetField;
 		try {
-			targetField = CtField.make("private " + description.getTarget().getClass().getName() + " target;",
+			targetField = CtField.make("private " + description.getType().getName() + " target;",
 			        hyalineProxyClass);
 
 			hyalineProxyClass.addField(targetField);

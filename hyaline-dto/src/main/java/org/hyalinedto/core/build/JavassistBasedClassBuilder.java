@@ -30,6 +30,11 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		Class<?> entityClass = description.getType();
 		CtClass hyalineProxyClass = classPool.makeClass(proxyClassName);
 
+		if (Modifier.isFinal(entityClass.getModifiers())) {
+			throw new CannotBuildClassException("Cannot proxy class " + entityClass.getCanonicalName()
+			        + " since it is final.");
+		}
+
 		// avoid NotFoundException if possible
 		CtClass clazz = null;
 		try {
@@ -80,34 +85,43 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 
 			// Here I create the necessary fields
 			for (FieldDescription field : description.getFields().values()) {
-				CtField ctField = createFieldFromDescription(classPool, constpool, field, hyalineProxyClass);
+				int modifiers = field.getField().getModifiers();
+				
+				// Check the field is private or, if not private, it is not final
+				if (Modifier.isPrivate(modifiers) || ((!Modifier.isPrivate(modifiers)) && (!Modifier.isFinal(modifiers)))) {
+					CtField ctField = createFieldFromDescription(classPool, constpool, field, hyalineProxyClass);
 
-				hyalineProxyClass.addField(ctField);
+					hyalineProxyClass.addField(ctField);
 
-				// Generate a getter and a setter for fields defined in
-				// template
-				if (field.isFromTemplate()) {
-					CtMethod getter = createGetter(field, hyalineProxyClass);
-					hyalineProxyClass.addMethod(getter);
-					CtMethod setter = createSetter(field, hyalineProxyClass);
-					hyalineProxyClass.addMethod(setter);
+					// Generate a getter and a setter for fields defined in
+					// template
+					if (field.isFromTemplate()) {
+						CtMethod getter = createGetter(field, hyalineProxyClass);
+						hyalineProxyClass.addMethod(getter);
+						CtMethod setter = createSetter(field, hyalineProxyClass);
+						hyalineProxyClass.addMethod(setter);
+					}
 				}
 			}
 
 			for (MethodDescription method : description.getMethods().values()) {
 				// Handle only getters and setters
 				String methodName = method.getMethod().getName();
-				if (methodName.startsWith("get") || methodName.startsWith("set") || methodName.startsWith("is")) {
-					CtMethod ctMethod;
-					try {
-						ctMethod = createMethodFromDescription(classPool, constpool, method, hyalineProxyClass,
-						        description);
-						if (ctMethod != null) {
-							// could correlate method name to accessed field
-							hyalineProxyClass.addMethod(ctMethod);
+
+				// check the method is not final
+				if (!Modifier.isFinal(method.getMethod().getModifiers())) {
+					if (methodName.startsWith("get") || methodName.startsWith("set") || methodName.startsWith("is")) {
+						CtMethod ctMethod;
+						try {
+							ctMethod = createMethodFromDescription(classPool, constpool, method, hyalineProxyClass,
+							        description);
+							if (ctMethod != null) {
+								// could correlate method name to accessed field
+								hyalineProxyClass.addMethod(ctMethod);
+							}
+						} catch (FieldNotFoundException e) {
+							e.printStackTrace();
 						}
-					} catch (FieldNotFoundException e) {
-						e.printStackTrace();
 					}
 				}
 			}

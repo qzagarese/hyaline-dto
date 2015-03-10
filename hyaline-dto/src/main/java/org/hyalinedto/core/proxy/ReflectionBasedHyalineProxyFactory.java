@@ -166,6 +166,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		try {
 			proxyClass = classBuilder.buildClass(description, proxyClassName);
 		} catch (CannotBuildClassException e) {
+			e.printStackTrace();
 			throw new CannotInstantiateProxyException();
 		}
 		return proxyClass;

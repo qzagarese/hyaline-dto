@@ -3,6 +3,28 @@ Hyaline DTO - A Java library for dynamic creation of Data Transfer Objects
 
 ## News
 
+### 13/03/2015
+
+A new snapshot containing several bug fixes is now available.
+
+```xml
+
+<dependency>
+  <groupId>org.hyalinedto</groupId>
+  <artifactId>hyalinedto</artifactId>
+  <version>0.9.0-SNAPSHOT</version>
+</dependency>
+
+<repository>
+  <id>oss-sonatype</id>
+  <name>oss-sonatype</name>
+  <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+  <snapshots>
+    <enabled>true</enabled>
+  </snapshots>
+</repository>
+
+```
 ### 22/01/2015
 
 Examples section added. 

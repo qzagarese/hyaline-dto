@@ -4,8 +4,8 @@ import java.lang.reflect.Field;
 
 public class ReflectionUtils {
 
-	public static Object getFieldValue(Field field, Object instance)
-			throws IllegalArgumentException, IllegalAccessException {
+	public static Object getFieldValue(Field field, Object instance) throws IllegalArgumentException,
+	        IllegalAccessException {
 		Object value = null;
 		boolean accessible = field.isAccessible();
 		field.setAccessible(true);
@@ -14,12 +14,34 @@ public class ReflectionUtils {
 		return value;
 	}
 
-	public static void injectField(Field field, Object instance, Object value)
-			throws IllegalArgumentException, IllegalAccessException {
+	public static void injectField(Field field, Object instance, Object value) throws IllegalArgumentException,
+	        IllegalAccessException {
 		boolean accessible = field.isAccessible();
 		field.setAccessible(true);
 		field.set(instance, value);
 		field.setAccessible(accessible);
+	}
+
+	public static Object getFieldValue(String field, Object instance) {
+		Field f = null;
+		Object value = null;
+		try {
+			f = instance.getClass().getDeclaredField(field);
+			value = getFieldValue(f, instance);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			// Field does not exist or cannot be accessed, so return null
+		}
+		return value;
+	}
+
+	public static void injectField(String field, Object instance, Object value) {
+		Field f = null;
+		try {
+			f = instance.getClass().getDeclaredField(field);
+			injectField(f, instance, value);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			// Field does not exist or cannot be accessed, just ignore
+		}
 	}
 
 	public static boolean isFieldInitialized(Object dto, Field f) {
@@ -62,7 +84,7 @@ public class ReflectionUtils {
 			initialized = value != null;
 			break;
 		}
-	
+
 		return initialized;
 	}
 

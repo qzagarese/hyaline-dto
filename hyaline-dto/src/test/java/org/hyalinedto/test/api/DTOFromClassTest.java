@@ -16,7 +16,7 @@ import org.hyalinedto.test.domainclasses.Person;
 import org.junit.Before;
 import org.junit.Test;
 
-public class DTOFromScratchTest {
+public class DTOFromClassTest {
 
 	private org.hyalinedto.test.domainclasses.Person john;
 
@@ -37,40 +37,43 @@ public class DTOFromScratchTest {
 	}
 
 	@Test
-	public void testFieldAnnotationAdded() throws HyalineException, NoSuchFieldException, SecurityException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+	public void testFieldAnnotationAdded() throws HyalineException,
+			NoSuchFieldException, SecurityException {
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
 			@TestFieldAnnotation
 			private String firstName;
 
 		});
 		Field fn = dto.getClass().getDeclaredField("firstName");
-		TestFieldAnnotation annotation = fn.getAnnotation(TestFieldAnnotation.class);
+		TestFieldAnnotation annotation = fn
+				.getAnnotation(TestFieldAnnotation.class);
 		assertNotNull(annotation);
 	}
-
+	
 	@Test
-	public void testFieldAnnotationWithMemberAnnotationAdded() throws HyalineException, NoSuchFieldException,
-	        SecurityException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+	public void testFieldAnnotationWithMemberAnnotationAdded() throws HyalineException,
+			NoSuchFieldException, SecurityException {
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
 			@TestFieldAnnotationWithAnnotationMember(testAnnotation = @TestFieldAnnotation(intValue = 123))
 			private String firstName;
 
 		});
 		Field fn = dto.getClass().getDeclaredField("firstName");
-		TestFieldAnnotationWithAnnotationMember outer = fn.getAnnotation(TestFieldAnnotationWithAnnotationMember.class);
+		TestFieldAnnotationWithAnnotationMember outer = fn
+				.getAnnotation(TestFieldAnnotationWithAnnotationMember.class);
 		TestFieldAnnotation testAnnotation = outer.testAnnotation();
 		assertNotNull(outer);
 		assertNotNull(testAnnotation);
 		assertEquals(123, testAnnotation.intValue());
-
+		
 	}
 
 	@Test
 	public void testClassnameAssigned() throws HyalineException {
 		final String proxyClassName = "org.hyalinedto.MyClass";
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
 			@TestFieldAnnotation
 			private String firstName;
@@ -78,10 +81,11 @@ public class DTOFromScratchTest {
 		}, proxyClassName);
 		assertEquals(proxyClassName, dto.getClass().getName());
 	}
-
+	
+	
 	@Test
-	public void testFieldValueOverwritten() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+	public void testFieldValueOverwritten() throws HyalineException{
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
 			@SuppressWarnings("unused")
 			private String firstName = "Ringo";
@@ -89,41 +93,44 @@ public class DTOFromScratchTest {
 		});
 		assertEquals("Ringo", dto.getFirstName());
 	}
-
+	
 	@Test
-	public void testWithArrayField() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+	public void testWithArrayField() throws HyalineException{
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
+			
 			@SuppressWarnings("unused")
-			private String[] colors = { "Black" };
+			private String[] colors = {"Black"};
 
 		});
 		assertEquals("Black", dto.getColors()[0]);
 	}
-
+	
 	@Test
-	public void testAccessToNewField() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+	public void testAccessToNewField() throws HyalineException{
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
 			@SuppressWarnings("unused")
 			private String name = john.getFirstName();
 
 		});
 		HyalineDTO hyalineDTO = (HyalineDTO) dto;
-
+		
 		assertEquals(hyalineDTO.getAttribute("name"), john.getFirstName());
 
 	}
-
+	
 	@Test
-	public void testAnnotationRemoved() throws HyalineException, NoSuchFieldException, SecurityException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+	public void tenstAnnotationOverWritten() throws HyalineException, NoSuchFieldException, SecurityException {
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
+			@TestFieldAnnotation(intValue = 3)
+			private Address address;
+			
 		});
 		Field field = dto.getClass().getDeclaredField("address");
 		TestFieldAnnotation annotation = field.getAnnotation(TestFieldAnnotation.class);
-		assertEquals(null, annotation);
-
+		assertEquals(3, annotation.intValue());
 	}
-
+	
 }

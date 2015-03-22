@@ -15,12 +15,14 @@ import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 
+import org.hyalinedto.api.HyalineDTO;
 import org.hyalinedto.core.ClassBuilder;
 import org.hyalinedto.core.exception.CannotBuildClassException;
 import org.hyalinedto.core.exception.FieldNotFoundException;
 import org.hyalinedto.core.reflect.DTODescription;
 import org.hyalinedto.core.reflect.FieldDescription;
 import org.hyalinedto.core.reflect.MethodDescription;
+import org.hyalinedto.core.reflect.ReflectionUtils;
 
 public class JavassistBasedClassBuilder implements ClassBuilder {
 
@@ -35,39 +37,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			        + " since it is final.");
 		}
 
-		// avoid NotFoundException if possible
-		CtClass clazz = null;
-		try {
-			clazz = classPool.get(entityClass.getName());
-		} catch (NotFoundException e) {
-			classPool.appendClassPath(new ClassClassPath(entityClass));
-			try {
-				clazz = classPool.get(entityClass.getName());
-			} catch (NotFoundException e1) {
-				throw new CannotBuildClassException(e1.getMessage());
-			}
-		}
-
-		try {
-			hyalineProxyClass.setSuperclass(clazz);
-		} catch (CannotCompileException e1) {
-			throw new CannotBuildClassException(e1.getMessage());
-		}
-		for (Class<?> interfaceType : description.getImplementedInterfaces()) {
-			CtClass anInterface = null;
-			// same here
-			try {
-				anInterface = classPool.get(interfaceType.getName());
-			} catch (NotFoundException e) {
-				classPool.appendClassPath(new ClassClassPath(interfaceType));
-				try {
-					anInterface = classPool.get(interfaceType.getName());
-				} catch (NotFoundException e2) {
-					throw new CannotBuildClassException(e2.getMessage());
-				}
-			}
-			hyalineProxyClass.addInterface(anInterface);
-		}
+		setSuperClassAndImplementHyalineDTO(classPool, entityClass, hyalineProxyClass);
 
 		ClassFile ccFile = hyalineProxyClass.getClassFile();
 		ConstPool constpool = ccFile.getConstPool();
@@ -78,57 +48,142 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		// Add a field for target
 		CtField targetField;
 		try {
-			targetField = CtField.make("private " + description.getType().getName() + " target;",
-			        hyalineProxyClass);
-
+			targetField = CtField.make("private " + description.getType().getName() + " target;", hyalineProxyClass);
 			hyalineProxyClass.addField(targetField);
 
-			// Here I create the necessary fields
-			for (FieldDescription field : description.getFields().values()) {
-				int modifiers = field.getField().getModifiers();
-				
-				// Check the field is private or, if not private, it is not final
-				if (Modifier.isPrivate(modifiers) || ((!Modifier.isPrivate(modifiers)) && (!Modifier.isFinal(modifiers)))) {
-					CtField ctField = createFieldFromDescription(classPool, constpool, field, hyalineProxyClass);
+			handleFieldsDescriptions(description, classPool, hyalineProxyClass, constpool);
 
-					hyalineProxyClass.addField(ctField);
+			handleMethodDescriptions(description, classPool, hyalineProxyClass, constpool);
 
-					// Generate a getter and a setter for fields defined in
-					// template
-					if (field.isFromTemplate()) {
-						CtMethod getter = createGetter(field, hyalineProxyClass);
-						hyalineProxyClass.addMethod(getter);
-						CtMethod setter = createSetter(field, hyalineProxyClass);
-						hyalineProxyClass.addMethod(setter);
-					}
-				}
-			}
-
-			for (MethodDescription method : description.getMethods().values()) {
-				// Handle only getters and setters
-				String methodName = method.getMethod().getName();
-
-				// check the method is not final
-				if (!Modifier.isFinal(method.getMethod().getModifiers())) {
-					if (methodName.startsWith("get") || methodName.startsWith("set") || methodName.startsWith("is")) {
-						CtMethod ctMethod;
-						try {
-							ctMethod = createMethodFromDescription(classPool, constpool, method, hyalineProxyClass,
-							        description);
-							if (ctMethod != null) {
-								// could correlate method name to accessed field
-								hyalineProxyClass.addMethod(ctMethod);
-							}
-						} catch (FieldNotFoundException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
+			implementHyalineDTOGetAttribute(classPool, hyalineProxyClass);
+			
+			implementHyalineDTOSetAttribute(classPool, hyalineProxyClass);
 
 			return hyalineProxyClass.toClass();
 		} catch (CannotCompileException e) {
+			e.printStackTrace();
 			throw new CannotBuildClassException(e.getMessage());
+		}
+	}
+
+	private void implementHyalineDTOGetAttribute(ClassPool classPool,
+	        CtClass hyalineProxyClass) throws CannotBuildClassException {
+		StringBuffer buffer = new StringBuffer();
+		
+		buffer.append("{");
+		buffer.append("return " + ReflectionUtils.class.getCanonicalName() + ".getFieldValue($1, this);");
+		buffer.append("}");
+		
+		String methodBody = buffer.toString();
+		try {
+			CtMethod method = CtNewMethod.make(Modifier.PUBLIC, classPool.get(Object.class.getCanonicalName()),
+			        "getAttribute", new CtClass[] { classPool.get(String.class.getCanonicalName()) }, new CtClass[] {},
+			        methodBody, hyalineProxyClass);
+
+			hyalineProxyClass.addMethod(method);
+		} catch (CannotCompileException | NotFoundException e) {
+			e.printStackTrace();
+			throw new CannotBuildClassException(e.getMessage());
+		}
+	}
+	
+	private void implementHyalineDTOSetAttribute(ClassPool classPool,
+	        CtClass hyalineProxyClass)throws CannotBuildClassException {
+		StringBuffer buffer = new StringBuffer();
+		
+		buffer.append("{");
+		buffer.append(ReflectionUtils.class.getCanonicalName() + ".injectField($1, this, $2);");
+		buffer.append("}");
+		
+		String methodBody = buffer.toString();
+		try {
+			CtClass objectClass = classPool.get(Object.class.getCanonicalName());
+			CtClass stringClass = classPool.get(String.class.getCanonicalName());
+			CtMethod method = CtNewMethod.make(Modifier.PUBLIC, classPool.get("void"),
+			        "setAttribute", new CtClass[] { stringClass, objectClass }, new CtClass[] {},
+			        methodBody, hyalineProxyClass);
+
+			hyalineProxyClass.addMethod(method);
+		} catch (CannotCompileException | NotFoundException e) {
+			e.printStackTrace();
+			throw new CannotBuildClassException(e.getMessage());
+		}
+	}
+
+	private void setSuperClassAndImplementHyalineDTO(ClassPool classPool, Class<?> entityClass,
+	        CtClass hyalineProxyClass) throws CannotBuildClassException {
+		// avoid NotFoundException if possible
+		CtClass clazz = null;
+		CtClass hyalineDTO = null;
+		try {
+			clazz = classPool.get(entityClass.getName());
+			hyalineDTO = classPool.get(HyalineDTO.class.getCanonicalName());
+		} catch (NotFoundException e) {
+			classPool.appendClassPath(new ClassClassPath(entityClass));
+			classPool.appendClassPath(new ClassClassPath(HyalineDTO.class));
+			try {
+				clazz = classPool.get(entityClass.getName());
+				hyalineDTO = classPool.get(HyalineDTO.class.getCanonicalName());
+			} catch (NotFoundException e1) {
+				throw new CannotBuildClassException(e1.getMessage());
+			}
+		}
+
+		try {
+			hyalineProxyClass.setSuperclass(clazz);
+			hyalineProxyClass.addInterface(hyalineDTO);
+		} catch (CannotCompileException e1) {
+			throw new CannotBuildClassException(e1.getMessage());
+		}
+	}
+
+	private void handleFieldsDescriptions(DTODescription description, ClassPool classPool, CtClass hyalineProxyClass,
+	        ConstPool constpool) throws CannotCompileException, CannotBuildClassException {
+		// Here I create the necessary fields
+		for (FieldDescription field : description.getFields().values()) {
+			int modifiers = field.getField().getModifiers();
+
+			// Check the field is private or, if not private, it is not
+			// final
+			if (Modifier.isPrivate(modifiers) || ((!Modifier.isPrivate(modifiers)) && (!Modifier.isFinal(modifiers)))) {
+				CtField ctField = createFieldFromDescription(classPool, constpool, field, hyalineProxyClass);
+
+				hyalineProxyClass.addField(ctField);
+
+				// Generate a getter and a setter for fields defined in
+				// template
+				if (field.isFromTemplate()) {
+					CtMethod getter = createGetter(field, hyalineProxyClass);
+					hyalineProxyClass.addMethod(getter);
+					CtMethod setter = createSetter(field, hyalineProxyClass);
+					hyalineProxyClass.addMethod(setter);
+				}
+			}
+		}
+	}
+
+	private void handleMethodDescriptions(DTODescription description, ClassPool classPool, CtClass hyalineProxyClass,
+	        ConstPool constpool) throws CannotCompileException, CannotBuildClassException {
+		for (MethodDescription method : description.getMethods().values()) {
+			// Handle only getters and setters
+			String methodName = method.getMethod().getName();
+
+			// check the method is not final
+			if (!Modifier.isFinal(method.getMethod().getModifiers())) {
+				if (methodName.startsWith("get") || methodName.startsWith("set") || methodName.startsWith("is")) {
+					CtMethod ctMethod;
+					try {
+						ctMethod = createMethodFromDescription(classPool, constpool, method, hyalineProxyClass,
+						        description);
+						if (ctMethod != null) {
+							// could correlate method name to accessed field
+							hyalineProxyClass.addMethod(ctMethod);
+						}
+					} catch (FieldNotFoundException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 		}
 	}
 
@@ -216,8 +271,10 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			buffer.append("target.").append(methodName).append("($1);");
 			buffer.append("}");
 		}
+
 		// assign the argument value to the field
 		buffer.append("this.").append(fieldName).append(" = $1;}");
+
 		CtClass returnType = null;
 		ClassPool classPool = ClassPool.getDefault();
 		try {
@@ -266,6 +323,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 			buffer.append("this.").append(fieldName).append(" = target.").append(methodName).append("();");
 			buffer.append("}");
 		}
+
 		// return the value of the corresponding field
 		buffer.append("return this.").append(fieldName).append(";}");
 		ClassPool classPool = ClassPool.getDefault();

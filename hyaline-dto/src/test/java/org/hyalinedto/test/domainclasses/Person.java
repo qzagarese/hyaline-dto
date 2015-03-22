@@ -1,7 +1,7 @@
 package org.hyalinedto.test.domainclasses;
 
-import java.util.Arrays;
-import java.util.List;
+import org.hyalinedto.test.annotations.TestFieldAnnotation;
+
 
 public class Person {
 
@@ -9,20 +9,10 @@ public class Person {
 
 	private String lastName;
 
-	private List<Double> scores = Arrays.asList(new Double[] { 1.2, 9.45,
-			0.432, 4.67 });
-	
-	private String[] colors = {"Green", "White", "Red"};
+	private String[] colors = { "Green", "White", "Red" };
 
+	@TestFieldAnnotation
 	private Address address;
-
-	public List<Double> getScores() {
-		return scores;
-	}
-
-	public void setScores(List<Double> scores) {
-		this.scores = scores;
-	}
 
 	public String getFirstName() {
 		return firstName;

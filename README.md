@@ -3,6 +3,29 @@ Hyaline DTO - A Java library for dynamic creation of Data Transfer Objects
 
 ## News
 
+### 22/03/2015
+
+A new snapshot providing dynamic access to dynamically created fields and new tests is now available.
+You can now access dynamic fields as follows:
+
+```java
+Person person = methodReturningInitializedPerson();
+Person dto = Hyaline.dtoFromScratch(person, new DTO() {
+	
+		private String myNewField = "Hello World!";
+
+		});
+		
+HyalineDTO proxy = (HyalineDTO) dto;		
+
+String hello = (String) proxy.getAttribute("myNewField");
+
+```
+
+Remember that this way to access fields should be used only for dynamic fields.
+Inherited fields can be accessed in a more efficient way by using getters and setters.
+
+
 ### 13/03/2015
 
 A new snapshot containing several bug fixes is now available.
@@ -30,19 +53,6 @@ A new snapshot containing several bug fixes is now available.
 Examples section added. 
 Added a Maven project showing how to use HyalineDTO with Spring Boot for creating dynamic bootable REST services. 
 
-### 22/12/2014 HyalineDTO is available on Maven Central
-
-You can use HyalineDTO by importing the following Maven dependency:
-
-```xml
-
-<dependency>
-  <groupId>org.hyalinedto</groupId>
-  <artifactId>hyalinedto</artifactId>
-  <version>0.8-beta-1</version>
-</dependency>
-
-```
 
 
 

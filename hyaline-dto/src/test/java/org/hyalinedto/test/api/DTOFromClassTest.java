@@ -72,7 +72,7 @@ public class DTOFromClassTest {
 
 	@Test
 	public void testClassnameAssigned() throws HyalineException {
-		final String proxyClassName = "org.hyalinedto.MyClass";
+		final String proxyClassName = "org.hyalinedto.MyClass2";
 		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
 
 			@TestFieldAnnotation

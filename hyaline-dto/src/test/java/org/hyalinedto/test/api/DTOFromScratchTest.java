@@ -1,8 +1,6 @@
 package org.hyalinedto.test.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
+import static org.junit.Assert.*;
 import java.lang.reflect.Field;
 
 import org.hyalinedto.api.DTO;
@@ -124,6 +122,48 @@ public class DTOFromScratchTest {
 		TestFieldAnnotation annotation = field.getAnnotation(TestFieldAnnotation.class);
 		assertEquals(null, annotation);
 
+	}
+
+	@Test
+	public void testHyalineDTOGet() throws HyalineException {
+		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+
+			@SuppressWarnings("unused")
+			private String surname = john.getLastName();
+
+		});
+
+		HyalineDTO proxy = (HyalineDTO) dto;
+		assertEquals(john.getLastName(), proxy.getAttribute("surname"));
+
+	}
+
+	@Test
+	public void testTypedSetDynamicGet() throws HyalineException {
+
+		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+
+		});
+
+		dto.setFirstName("Paul");
+		HyalineDTO proxy = (HyalineDTO) dto;
+
+		assertEquals(dto.getFirstName(), proxy.getAttribute("firstName"));
+	}
+
+	@Test
+	public void testDynamicSetTypedGet() throws HyalineException {
+
+		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+
+		});
+
+		HyalineDTO proxy = (HyalineDTO) dto;
+
+		proxy.setAttribute("firstName", "Paul");
+
+		// I expect different values according to HyalineDTO getAttribute and setAttribute specification
+		assertTrue(!((String)proxy.getAttribute("firstName")).equals(dto.getFirstName()));
 	}
 
 }

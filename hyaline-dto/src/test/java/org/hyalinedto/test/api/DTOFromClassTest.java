@@ -2,6 +2,7 @@ package org.hyalinedto.test.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 
@@ -120,6 +121,18 @@ public class DTOFromClassTest {
 
 	}
 	
+	
+	@Test
+	public void testAnnotationKept() throws HyalineException, NoSuchFieldException, SecurityException {
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
+
+		});
+		Field field = dto.getClass().getDeclaredField("address");
+		TestFieldAnnotation annotation = field.getAnnotation(TestFieldAnnotation.class);
+		assertNotNull(annotation);
+
+	}
+	
 	@Test
 	public void tenstAnnotationOverWritten() throws HyalineException, NoSuchFieldException, SecurityException {
 		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
@@ -132,5 +145,48 @@ public class DTOFromClassTest {
 		TestFieldAnnotation annotation = field.getAnnotation(TestFieldAnnotation.class);
 		assertEquals(3, annotation.intValue());
 	}
+	
+	@Test
+	public void testHyalineDTOGet() throws HyalineException {
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
+
+			@SuppressWarnings("unused")
+			private String surname = john.getLastName();
+
+		});
+
+		HyalineDTO proxy = (HyalineDTO) dto;
+		assertEquals(john.getLastName(), proxy.getAttribute("surname"));
+
+	}
+
+	@Test
+	public void testTypedSetDynamicGet() throws HyalineException {
+
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
+
+		});
+
+		dto.setFirstName("Paul");
+		HyalineDTO proxy = (HyalineDTO) dto;
+
+		assertEquals(dto.getFirstName(), proxy.getAttribute("firstName"));
+	}
+
+	@Test
+	public void testDynamicSetTypedGet() throws HyalineException {
+
+		final Person dto = Hyaline.dtoFromClass(john, new DTO() {
+
+		});
+
+		HyalineDTO proxy = (HyalineDTO) dto;
+
+		proxy.setAttribute("firstName", "Paul");
+
+		// I expect different values according to HyalineDTO getAttribute and setAttribute specification
+		assertTrue(!((String)proxy.getAttribute("firstName")).equals(dto.getFirstName()));
+	}
+
 	
 }

@@ -20,18 +20,18 @@ public class Hyaline {
 
 	/**
 	 * It lets you create a new DTO from scratch. This means that any
-	 * configuration for JAXB, Jackson or whatever serialization framework you
-	 * are using on your entity T will be ignored. The only configuration that
+	 * annotation from JAXB, Jackson or whatever serialization framework you
+	 * are using on your entity T will be ignored. The only annotation-based configuration that
 	 * will be used is the one you are defining in this invocation.
 	 *
 	 * @param <T>
 	 *            the generic type
 	 * @param entity
-	 *            the entity you need a DTO for.
+	 *            the entity you are going proxy.
 	 * @param dtoTemplate
-	 *            the DTO configuration passed as an anonymous class.
-	 * @return a proxy that can be assigned to entity, that holds the values of
-	 *         entity and configured according to config
+	 *            the DTO template passed as an anonymous class.
+	 * @return a proxy that extends the type of entity, holding the same instance variables values as
+	 *         entity and configured according to dtoTemplate
 	 * 
 	 * @throws HyalineException
 	 */
@@ -42,23 +42,23 @@ public class Hyaline {
 
 	/**
 	 * It lets you create a new DTO from scratch. This means that any
-	 * configuration for JAXB, Jackson or whatever serialization framework you
-	 * are using on your entity T will be ignored. The only configuration that
+	 * annotation for JAXB, Jackson or whatever serialization framework you
+	 * are using on your entity T will be ignored. The only annotation-based configuration that
 	 * will be used is the one you are defining in this invocation.
 	 *
 	 * @param <T>
 	 *            the generic type
 	 * @param entity
-	 *            the entity you need a DTO for.
+	 *            the entity you are going proxy.
 	 * @param dtoTemplate
-	 *            the DTO configuration passed as an anonymous class.
+	 *            the DTO template passed as an anonymous class.
 	 * 
 	 * @param proxyClassName
 	 *            the name you want to assign to newly generated class
 	 * 
 	 * 
-	 * @return a proxy that can be assigned to entity, that holds the values of
-	 *         entity and configured according to config
+	 * @return a proxy that extends the type of entity, holding the same instance variables values as
+	 *         entity and configured according to dtoTemplate
 	 * 
 	 * @throws HyalineException
 	 */
@@ -73,20 +73,23 @@ public class Hyaline {
 	}
 
 	/**
-	 * It lets you create a new DTO starting from the configuration of your
-	 * entity. This means that any configuration for JAXB, Jackson or whatever
+	 * It lets you create a new DTO starting from the annotation-based configuration of your
+	 * entity. This means that any annotation-based configuration for JAXB, Jackson or whatever
 	 * serialization framework you are using on your entity T will be kept.
-	 * However, if you insert a configuration on a field that exists also in
-	 * your class, this configuration will override the one in your class.
+	 * However, if you insert an annotation on a field that exists also in
+	 * your class, this annotation will override the one in your class.
+	 *
 	 *
 	 * @param <T>
 	 *            the generic type
 	 * @param entity
-	 *            the entity you need a DTO for.
+	 *            the entity you are going proxy.
 	 * @param dtoTemplate
-	 *            the DTO configuration passed as an anonymous class.
-	 * @return a proxy that can be assigned to entity, that holds the values of
-	 *         entity and configured according to config
+	 *            the DTO template passed as an anonymous class.
+	 * 
+	 * 
+	 * @return a proxy that extends the type of entity, holding the same instance variables values as
+	 *         entity and configured according to dtoTemplate
 	 * 
 	 * @throws HyalineException
 	 */
@@ -97,24 +100,26 @@ public class Hyaline {
 	}
 
 	/**
-	 * It lets you create a new DTO starting from the configuration of your
-	 * entity. This means that any configuration for JAXB, Jackson or whatever
+	 * It lets you create a new DTO starting from the annotation-based configuration of your
+	 * entity. This means that any annotation-based configuration for JAXB, Jackson or whatever
 	 * serialization framework you are using on your entity T will be kept.
-	 * However, if you insert a configuration on a field that exists also in
-	 * your class, this configuration will override the one in your class.
+	 * However, if you insert an annotation on a field that exists also in
+	 * your class, this annotation will override the one in your class.
+	 *
 	 *
 	 * @param <T>
 	 *            the generic type
 	 * @param entity
-	 *            the entity you need a DTO for.
+	 *            the entity you are going proxy.
 	 * @param dtoTemplate
-	 *            the DTO configuration passed as an anonymous class.
+	 *            the DTO template passed as an anonymous class.
 	 * 
 	 * @param proxyClassName
 	 *            the name you want to assign to newly generated class
 	 * 
-	 * @return a proxy that can be assigned to entity, that holds the values of
-	 *         entity and configured according to config
+	 * 
+	 * @return a proxy that extends the type of entity, holding the same instance variables values as
+	 *         entity and configured according to dtoTemplate
 	 * 
 	 * @throws HyalineException
 	 */

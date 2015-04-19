@@ -4,7 +4,7 @@ Hyaline DTO Examples
 ## hyalinedto-springboot-rest-example
 
 A simple Spring Boot application running a REST service.
-The service returns a `Person` object serialized in different ways, as shown in the main `README` file.
+The service returns a `Person` object serialized in different ways, as shown in the [Getting started](https://github.com/Bluesoul/hyaline-dto/wiki/Getting-started) page.
 
 Path | Result 
 :-----|:-----------

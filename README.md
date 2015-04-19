@@ -42,6 +42,11 @@ return Hyaline.dtoFromScratch(new DTO(){
 ###One more thing 
 Hyaline works pretty well when it comes to create DTOs, but it is basically a tool that accepts stuff with annotations and spits out new types, so you can imagine a lot of possible scenarios (what about dynamic pojo validation or dynamic persistence mappings?). Imagination is the limit :-) 
 
+##Where to go from here?
+
+The [Getting started](https://github.com/Bluesoul/hyaline-dto/wiki/Getting-started) page is probably the best place :-)
+You can also give a look at the [Spring boot example](https://github.com/Bluesoul/hyaline-dto/tree/master/hyaline-dto-examples) to see Hyaline in action!
+
 ## How to use it
 
 A simple Maven dependency:

@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PersonResource {
 
 	final Person john;
-	
+
 	public PersonResource() {
 		john = new Person();
 		john.setFirstName("John");
@@ -61,9 +61,9 @@ public class PersonResource {
 
 	@RequestMapping("/inlined")
 	public Person getInlined() throws HyalineException {
-		
+
 		return Hyaline.dtoFromClass(john, new DTO() {
-			
+
 			@JsonIgnore
 			private Address address;
 

@@ -64,5 +64,14 @@ public interface HyalineDTO {
 	 * @return
 	 */
 	Object getAttribute(String name);
+	
+	
+	/**
+	 * Returns the name of the attribute inside the dynamically created type that is used to reference the proxied instance.
+	 * It can be used to get a reference to the such instance in combination with the getAttribute method.
+	 * 
+	 * @return
+	 */
+	String obtainTargetFieldName();
 
 }

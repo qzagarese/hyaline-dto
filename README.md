@@ -56,15 +56,19 @@ A simple Maven dependency:
 <dependency>
   <groupId>org.hyalinedto</groupId>
   <artifactId>hyalinedto</artifactId>
-  <version>0.9.0</version>
+  <version>0.9.1</version>
 </dependency>
 
 ```
 or if you prefer Gradle:
 
-```compile 'org.hyalinedto:hyalinedto:0.9.0' ``` 
+```compile 'org.hyalinedto:hyalinedto:0.9.1' ``` 
 
 ## News
+### 25/05/2015
+Release 0.9.1 is out. Hyaline objects can now be passed as prototypes for new calls.
+Check out the [Spring Boot example](https://github.com/Bluesoul/hyaline-dto/blob/master/hyaline-dto-examples/hyalinedto-springboot-rest-example/src/main/java/org/hyalinedto/examples/springbootrest/resources/PersonResource.java)(`/withFullName` endpoint) to see how! 
+
 ### 19/04/2015
 Release 0.9.0 is finally out! 
 

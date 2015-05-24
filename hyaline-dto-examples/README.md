@@ -12,3 +12,4 @@ Path | Result
 `/noaddress` | removes the `address` attribute
 `/renamed` | renames fields `firstName` and `lastName` to `name` and `surname` respectively
 `/inlined` | serializes field `address` as a `String` instead of an `Address` instance
+`/withFullName` | adds field `fullName` as a concatenation of first and last. Shows how to use Hyaline objects as prototypes for new calls 

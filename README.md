@@ -117,9 +117,5 @@ A new snapshot containing several bug fixes is now available.
 </repository>
 
 ```
-### 22/01/2015
-
-Examples section added. 
-Added a Maven project showing how to use HyalineDTO with Spring Boot for creating dynamic bootable REST services. 
 
 

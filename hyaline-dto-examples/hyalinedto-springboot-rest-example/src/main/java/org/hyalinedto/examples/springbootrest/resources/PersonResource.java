@@ -57,6 +57,8 @@ public class PersonResource {
 			private String lastName;
 
 		});
+
+		
 	}
 
 	@RequestMapping("/inlined")
@@ -71,4 +73,26 @@ public class PersonResource {
 			private String stringAddress = john.getAddress().toString();
 		});
 	}
+	
+	@RequestMapping("/withFullName")
+	public Person getWithFullName() throws HyalineException {
+
+		final Person p =  Hyaline.dtoFromClass(john, new DTO() {
+
+			@JsonIgnore
+			private Address address;
+
+			@JsonProperty("address")
+			private String stringAddress = john.getAddress().toString();
+		});
+		
+		return Hyaline.dtoFromClass(p, new DTO(){
+			
+			@SuppressWarnings("unused")
+			private String fullName = p.getFirstName() + " " + p.getLastName();
+			
+		});
+		
+	}
+	
 }

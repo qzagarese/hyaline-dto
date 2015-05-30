@@ -15,7 +15,7 @@ import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 
-import org.hyalinedto.api.HyalineDTO;
+import org.hyalinedto.api.HyalinePrototype;
 import org.hyalinedto.core.ClassBuilder;
 import org.hyalinedto.core.exception.CannotBuildClassException;
 import org.hyalinedto.core.exception.FieldNotFoundException;
@@ -144,13 +144,13 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		CtClass hyalineDTO = null;
 		try {
 			clazz = classPool.get(entityClass.getName());
-			hyalineDTO = classPool.get(HyalineDTO.class.getCanonicalName());
+			hyalineDTO = classPool.get(HyalinePrototype.class.getCanonicalName());
 		} catch (NotFoundException e) {
 			classPool.appendClassPath(new ClassClassPath(entityClass));
-			classPool.appendClassPath(new ClassClassPath(HyalineDTO.class));
+			classPool.appendClassPath(new ClassClassPath(HyalinePrototype.class));
 			try {
 				clazz = classPool.get(entityClass.getName());
-				hyalineDTO = classPool.get(HyalineDTO.class.getCanonicalName());
+				hyalineDTO = classPool.get(HyalinePrototype.class.getCanonicalName());
 			} catch (NotFoundException e1) {
 				throw new CannotBuildClassException(e1.getMessage());
 			}

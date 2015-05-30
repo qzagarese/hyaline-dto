@@ -8,7 +8,7 @@ package org.hyalinedto.api;
  * @author Quirino Zagarese
  * 
  */
-public interface DTO {
+public interface $ {
 
 	
 }

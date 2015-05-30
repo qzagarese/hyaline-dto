@@ -31,7 +31,7 @@ public class Hyaline {
 	 * @throws HyalineException
 	 *             if the dynamic type could be created.
 	 */
-	public static Object dtoFromScratch(DTO dtoTemplate) throws HyalineException {
+	public static Object dtoFromScratch($ dtoTemplate) throws HyalineException {
 		return dtoFromScratch(new Object(), dtoTemplate, "Hyaline$Proxy$" + System.currentTimeMillis());
 	}
 
@@ -51,7 +51,7 @@ public class Hyaline {
 	 * @throws HyalineException
 	 *             if the dynamic type could be created.
 	 */
-	public static Object dtoFromScratch(DTO dtoTemplate, String proxyClassName) throws HyalineException {
+	public static Object dtoFromScratch($ dtoTemplate, String proxyClassName) throws HyalineException {
 		return dtoFromScratch(new Object(), dtoTemplate, proxyClassName);
 	}
 
@@ -74,7 +74,7 @@ public class Hyaline {
 	 * @throws HyalineException
 	 *             if the dynamic type could be created.
 	 */
-	public static <T> T dtoFromScratch(T entity, DTO dtoTemplate) throws HyalineException {
+	public static <T> T dtoFromScratch(T entity, $ dtoTemplate) throws HyalineException {
 		return dtoFromScratch(entity, dtoTemplate, "Hyaline$Proxy$" + System.currentTimeMillis());
 	}
 
@@ -102,7 +102,7 @@ public class Hyaline {
 	 * @throws HyalineException
 	 *             if the dynamic type could be created.
 	 */
-	public static <T> T dtoFromScratch(T entity, DTO dtoTemplate, String proxyClassName) throws HyalineException {
+	public static <T> T dtoFromScratch(T entity, $ dtoTemplate, String proxyClassName) throws HyalineException {
 		try {
 			return createDTO(entity, dtoTemplate, true, proxyClassName);
 		} catch (CannotInstantiateProxyException | DTODefinitionException e) {
@@ -135,7 +135,7 @@ public class Hyaline {
 	 * @throws HyalineException
 	 *             if the dynamic type could be created.
 	 */
-	public static <T> T dtoFromClass(T entity, DTO dtoTemplate) throws HyalineException {
+	public static <T> T dtoFromClass(T entity, $ dtoTemplate) throws HyalineException {
 		return dtoFromClass(entity, dtoTemplate, "Hyaline$Proxy$" + System.currentTimeMillis());
 	}
 
@@ -166,7 +166,7 @@ public class Hyaline {
 	 * @throws HyalineException
 	 *             if the dynamic type could be created.
 	 */
-	public static <T> T dtoFromClass(T entity, DTO dtoTemplate, String proxyClassName) throws HyalineException {
+	public static <T> T dtoFromClass(T entity, $ dtoTemplate, String proxyClassName) throws HyalineException {
 		try {
 			return createDTO(entity, dtoTemplate, false, proxyClassName);
 		} catch (CannotInstantiateProxyException | DTODefinitionException e) {
@@ -176,7 +176,7 @@ public class Hyaline {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> T createDTO(T entity, DTO dtoTemplate, boolean resetAnnotations, String proxyClassName)
+	private static <T> T createDTO(T entity, $ dtoTemplate, boolean resetAnnotations, String proxyClassName)
 			throws CannotInstantiateProxyException, DTODefinitionException {
 		return (T) proxyFactory.create(entity, dtoTemplate, resetAnnotations, proxyClassName);
 	}
@@ -199,5 +199,24 @@ public class Hyaline {
 	public static void setProxyFactory(HyalineProxyFactory proxyFactory) {
 		Hyaline.proxyFactory = proxyFactory;
 	}
+	
+	
+	public static <T> ProtoBuilder<T> proto($ dto){
+		return new ProtoBuilder<T>(proxyFactory).proto(dto);
+	}
+	
+	public static <T> ProtoBuilder<T> from(T t) {
+		return new ProtoBuilder<T>(proxyFactory).from(t);
+	}
+	
+	public static <T> ProtoBuilder<T> withAnnotations(){
+		return new ProtoBuilder<T>(proxyFactory).withAnnotations();
+	}
+	
+	public static <T> ProtoBuilder<T> withName(String typeName) {
+		return new ProtoBuilder<T>(proxyFactory).withName(typeName);
+	}
+	
+	
 
 }

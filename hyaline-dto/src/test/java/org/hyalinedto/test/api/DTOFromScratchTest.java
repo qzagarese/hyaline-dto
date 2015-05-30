@@ -3,9 +3,9 @@ package org.hyalinedto.test.api;
 import static org.junit.Assert.*;
 import java.lang.reflect.Field;
 
-import org.hyalinedto.api.DTO;
+import org.hyalinedto.api.$;
 import org.hyalinedto.api.Hyaline;
-import org.hyalinedto.api.HyalineDTO;
+import org.hyalinedto.api.HyalinePrototype;
 import org.hyalinedto.exception.HyalineException;
 import org.hyalinedto.test.annotations.TestFieldAnnotation;
 import org.hyalinedto.test.annotations.TestFieldAnnotationWithAnnotationMember;
@@ -36,7 +36,7 @@ public class DTOFromScratchTest {
 
 	@Test
 	public void testFieldAnnotationAdded() throws HyalineException, NoSuchFieldException, SecurityException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@TestFieldAnnotation
 			private String firstName;
@@ -50,7 +50,7 @@ public class DTOFromScratchTest {
 	@Test
 	public void testFieldAnnotationWithMemberAnnotationAdded() throws HyalineException, NoSuchFieldException,
 	        SecurityException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@TestFieldAnnotationWithAnnotationMember(testAnnotation = @TestFieldAnnotation(intValue = 123))
 			private String firstName;
@@ -68,7 +68,7 @@ public class DTOFromScratchTest {
 	@Test
 	public void testClassnameAssigned() throws HyalineException {
 		final String proxyClassName = "org.hyalinedto.MyClass";
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@TestFieldAnnotation
 			private String firstName;
@@ -79,7 +79,7 @@ public class DTOFromScratchTest {
 
 	@Test
 	public void testFieldValueOverwritten() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@SuppressWarnings("unused")
 			private String firstName = "Ringo";
@@ -90,7 +90,7 @@ public class DTOFromScratchTest {
 
 	@Test
 	public void testWithArrayField() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@SuppressWarnings("unused")
 			private String[] colors = { "Black" };
@@ -101,13 +101,13 @@ public class DTOFromScratchTest {
 
 	@Test
 	public void testAccessToNewField() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@SuppressWarnings("unused")
 			private String name = john.getFirstName();
 
 		});
-		HyalineDTO hyalineDTO = (HyalineDTO) dto;
+		HyalinePrototype hyalineDTO = (HyalinePrototype) dto;
 
 		assertEquals(hyalineDTO.getAttribute("name"), john.getFirstName());
 
@@ -115,7 +115,7 @@ public class DTOFromScratchTest {
 
 	@Test
 	public void testAnnotationRemoved() throws HyalineException, NoSuchFieldException, SecurityException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 		});
 		Field field = dto.getClass().getDeclaredField("address");
@@ -126,14 +126,14 @@ public class DTOFromScratchTest {
 
 	@Test
 	public void testHyalineDTOGet() throws HyalineException {
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 			@SuppressWarnings("unused")
 			private String surname = john.getLastName();
 
 		});
 
-		HyalineDTO proxy = (HyalineDTO) dto;
+		HyalinePrototype proxy = (HyalinePrototype) dto;
 		assertEquals(john.getLastName(), proxy.getAttribute("surname"));
 
 	}
@@ -141,12 +141,12 @@ public class DTOFromScratchTest {
 	@Test
 	public void testTypedSetDynamicGet() throws HyalineException {
 
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 		});
 
 		dto.setFirstName("Paul");
-		HyalineDTO proxy = (HyalineDTO) dto;
+		HyalinePrototype proxy = (HyalinePrototype) dto;
 
 		assertEquals(dto.getFirstName(), proxy.getAttribute("firstName"));
 	}
@@ -154,11 +154,11 @@ public class DTOFromScratchTest {
 	@Test
 	public void testDynamicSetTypedGet() throws HyalineException {
 
-		final Person dto = Hyaline.dtoFromScratch(john, new DTO() {
+		final Person dto = Hyaline.dtoFromScratch(john, new $() {
 
 		});
 
-		HyalineDTO proxy = (HyalineDTO) dto;
+		HyalinePrototype proxy = (HyalinePrototype) dto;
 
 		proxy.setAttribute("firstName", "Paul");
 

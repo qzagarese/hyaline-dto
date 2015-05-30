@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hyalinedto.api.HyalineDTO;
+import org.hyalinedto.api.HyalinePrototype;
 import org.hyalinedto.core.ClassBuilder;
 import org.hyalinedto.core.ClassRepository;
 import org.hyalinedto.core.HyalineProxyFactory;
@@ -95,7 +95,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 
 	private void injectTarget(Object proxy, DTODescription description, Object target) throws NoSuchFieldException,
 			SecurityException, IllegalArgumentException, IllegalAccessException {
-		HyalineDTO dto = (HyalineDTO) proxy;
+		HyalinePrototype dto = (HyalinePrototype) proxy;
 		Field field = proxy.getClass().getDeclaredField(dto.obtainTargetFieldName());
 		ReflectionUtils.injectField(field, proxy, target);
 	}

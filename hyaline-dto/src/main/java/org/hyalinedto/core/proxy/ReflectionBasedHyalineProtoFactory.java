@@ -9,23 +9,23 @@ import java.util.Map;
 import org.hyalinedto.api.HyalinePrototype;
 import org.hyalinedto.core.ClassBuilder;
 import org.hyalinedto.core.ClassRepository;
-import org.hyalinedto.core.HyalineProxyFactory;
+import org.hyalinedto.core.HyalineProtoFactory;
 import org.hyalinedto.core.build.JavassistBasedClassBuilder;
 import org.hyalinedto.core.exception.CannotBuildClassException;
 import org.hyalinedto.core.exception.CannotInstantiateProxyException;
-import org.hyalinedto.core.reflect.DTODescription;
+import org.hyalinedto.core.reflect.ProtoDescription;
 import org.hyalinedto.core.reflect.FieldDescription;
 import org.hyalinedto.core.reflect.MethodDescription;
 import org.hyalinedto.core.reflect.ReflectionUtils;
-import org.hyalinedto.exception.DTODefinitionException;
+import org.hyalinedto.exception.ProtoDefinitionException;
 
-public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
+public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 
 	private ClassBuilder classBuilder = new JavassistBasedClassBuilder();
 
 	private ClassRepository<String, Class<?>> classRepository = new InMemoryClassRepository();
 
-	private Map<String, DTODescription> dtoDescriptions = new HashMap<String, DTODescription>();
+	private Map<String, ProtoDescription> protoDescriptions = new HashMap<String, ProtoDescription>();
 
 	@Override
 	public ClassRepository<String, Class<?>> getClassRepository() {
@@ -47,100 +47,122 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		this.classBuilder = classBuilder;
 	}
 
-	public <T> Object create(T entity, Object dtoTemplate, boolean resetAnnotations, String proxyClassName)
-			throws CannotInstantiateProxyException, DTODefinitionException {
-		// check if a proxy definition for the template class already exists
-		Class<?> templateClass = getTemplateClass(dtoTemplate);
-		if (templateClass != dtoTemplate.getClass()) {
-			dtoTemplate = findTemplateInstance(templateClass, dtoTemplate.getClass(), dtoTemplate);
-			if (dtoTemplate == null) {
-				throw new DTODefinitionException("Could not find an initialized field of type "
-						+ templateClass.getName() + " in DTO definition.");
+	public <T> Object create(T superClassInstance, Object protoTemplate, boolean resetAnnotations, String protoClassName)
+			throws CannotInstantiateProxyException, ProtoDefinitionException {
+		// check if a proto definition for the template class already exists
+		Class<?> protoTemplateClass = getTemplateClass(protoTemplate);
+		if (protoTemplateClass != protoTemplate.getClass()) {
+			protoTemplate = findTemplateInstance(protoTemplateClass, protoTemplate.getClass(), protoTemplate);
+			if (protoTemplate == null) {
+				throw new ProtoDefinitionException("Could not find an initialized field of type "
+						+ protoTemplateClass.getName() + " in prototype definition.");
 			}
 		}
 
-		// check if a DTO description for the template class already exists
-		DTODescription description = dtoDescriptions.get(templateClass.getName());
+		// check if a prototype description for the template class already exists
+		ProtoDescription description = protoDescriptions.get(protoTemplateClass.getName());
 
-		// if not, create a description for the proxy definition and save it for
+		// if not, create a description for the prototype definition and save it for
 		// future invocations
 		if (description == null) {
-			description = createDescription(entity.getClass(), dtoTemplate, resetAnnotations);
-			dtoDescriptions.put(templateClass.getName(), description);
+			description = createDescription(superClassInstance.getClass(), protoTemplate, resetAnnotations);
+			protoDescriptions.put(protoTemplateClass.getName(), description);
 		}
 
-		Class<?> proxyClass = classRepository.get(templateClass.getName());
+		Class<?> protoType = classRepository.get(protoTemplateClass.getName());
 
-		// if no proxy definition exists, create it and save it to the
+		// if no prototype definition exists, create it and save it to the
 		// repository
-		if (proxyClass == null) {
-			// build the proxy definition
-			proxyClass = buildProxyClass(description, proxyClassName);
-			classRepository.put(templateClass.getName(), proxyClass);
+		if (protoType == null) {
+			// build the prototype definition
+			protoType = buildProtoClass(description, protoClassName);
+			classRepository.put(protoTemplateClass.getName(), protoType);
 		}
 
-		// finally, instantiate the proxy class
-		Object proxy = null;
+		// finally, instantiate the prototype class
+		Object proto = null;
 		try {
-			proxy = proxyClass.newInstance();
-			injectTarget(proxy, description, entity);
-			injectAllFields(proxy, description, dtoTemplate, entity);
+			proto = protoType.newInstance();
+			injectSuperClassInstance(proto, description, superClassInstance);
+			injectAllFields(proto, description, protoTemplate, superClassInstance);
 		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			e.printStackTrace();
 			throw new CannotInstantiateProxyException();
 		}
 
-		return proxy;
+		return proto;
 	}
 
-	private void injectTarget(Object proxy, DTODescription description, Object target) throws NoSuchFieldException,
+	private void injectSuperClassInstance(Object proto, ProtoDescription description, Object superClassInstance) throws NoSuchFieldException,
 			SecurityException, IllegalArgumentException, IllegalAccessException {
-		HyalinePrototype dto = (HyalinePrototype) proxy;
-		Field field = proxy.getClass().getDeclaredField(dto.obtainTargetFieldName());
-		ReflectionUtils.injectField(field, proxy, target);
+		HyalinePrototype hyalinePrototype = (HyalinePrototype) proto;
+		Field field = proto.getClass().getDeclaredField(hyalinePrototype.obtainTargetFieldName());
+		ReflectionUtils.injectField(field, proto, superClassInstance);
 	}
 
-	private void injectAllFields(Object proxy, DTODescription description, Object dtoTemplate, Object target)
+	private void injectAllFields(Object proto, ProtoDescription description, Object protoTemplate, Object superClassInstance)
 			throws IllegalArgumentException, IllegalAccessException,  SecurityException, NoSuchFieldException {
 		for (FieldDescription field : description.getFields().values()) {
 
 			Field proxyField = null;
 			try {
-				proxyField = proxy.getClass().getDeclaredField(field.getField().getName());
+				proxyField = proto.getClass().getDeclaredField(field.getField().getName());
 			} catch (NoSuchFieldException e) {
-				// proxy does not have this field because it cannot inherit (e.g. it was a final field)
+				// proto does not have this field because it cannot inherit it (e.g. it was a final field)
 			}
 
 			if (proxyField != null) {
 				Object value = null;
 				if (field.isFromTemplate() || field.isInitialized()) {
-					value = ReflectionUtils.getFieldValue(field.getField(), dtoTemplate);
+					value = ReflectionUtils.getFieldValue(field.getField(), protoTemplate);
 				} else {
 					// if the template redefines the field but does not
-					// initializes
-					// it
-					// retrieve the corresponding field from target class and
-					// get
-					// its value
+					// initialises it, retrieve the corresponding field 
+					// from super class and get its value
 					Field f = field.getField();
 					if (!f.getDeclaringClass().equals(description.getType())) {
 						f = description.getType().getDeclaredField(f.getName());
 					}
-					value = ReflectionUtils.getFieldValue(f, target);
+					value = ReflectionUtils.getFieldValue(f, superClassInstance);
 				}
-				ReflectionUtils.injectField(proxyField, proxy, value);
+				ReflectionUtils.injectField(proxyField, proto, value);
 			}
 		}
 	}
 
-	private Object findTemplateInstance(Class<?> templateClass, Class<?> dtoClass, Object config) {
+	private Object findTemplateInstance(Class<?> actualProtoTemplateClass, Class<?> protoTemplateDefinitionClass, Object protoTemplate) {
+		// if there is an inner class inside the proto template, 
+		// hyaline picks that one as template (actualProtoTemplateClass)
+		// protoTemplateDefinitionClass is the anonymous class (the $) that is not used in this case. 
+		// This is an exceptional case that allows the client to place annotations on the newly 
+		// defined type (annotations are placed on the inner class).
+		// In this case, an initialised field of type "actualProtoTemplateClass" must be provided.
+		// This method looks for such field
+		/**
+		 * 
+		 * Ex.
+		 * 
+		 * proto(new $(){ // <-- Here starts protoTemplateDefinitionClass
+		 * 
+		 * 		ActualProtoTemplateClass inst = new ActualProtoTemplateClass(); // we are looking for this
+		 * 		
+		 * 		@AnyAnnotation // this way we can put annotations on the prototype class
+		 * 		class ActualProtoTemplateClass() {
+		 * 
+		 * 			String anyField = "whatever.";		
+		 * 
+		 * 		}
+		 * 	
+		 * });
+		 * 
+		 */
 		Object value = null;
-		for (Field f : dtoClass.getDeclaredFields()) {
-			if (f.getType().equals(templateClass)) {
+		for (Field f : protoTemplateDefinitionClass.getDeclaredFields()) {
+			if (f.getType().equals(actualProtoTemplateClass)) {
 				boolean accessible = f.isAccessible();
 				f.setAccessible(true);
 				try {
-					value = f.get(config);
+					value = f.get(protoTemplate);
 				} catch (IllegalArgumentException | IllegalAccessException e) {
 					e.printStackTrace();
 				}
@@ -150,18 +172,18 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return value;
 	}
 
-	private Class<?> getTemplateClass(Object config) {
+	private Class<?> getTemplateClass(Object protoTemplate) {
 		Class<?> templateClass = null;
-		Class<?>[] innerClasses = config.getClass().getDeclaredClasses();
+		Class<?>[] innerClasses = protoTemplate.getClass().getDeclaredClasses();
 		if (innerClasses != null && innerClasses.length > 0) {
 			templateClass = innerClasses[0];
 		} else {
-			templateClass = config.getClass();
+			templateClass = protoTemplate.getClass();
 		}
 		return templateClass;
 	}
 
-	private Class<?> buildProxyClass(DTODescription description, String proxyClassName)
+	private Class<?> buildProtoClass(ProtoDescription description, String proxyClassName)
 			throws CannotInstantiateProxyException {
 		Class<?> proxyClass = null;
 		try {
@@ -173,45 +195,45 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return proxyClass;
 	}
 
-	private DTODescription createDescription(Class<?> entityType, Object config, boolean override)
-			throws DTODefinitionException {
-		DTODescription description = new DTODescription(entityType);
-		if (override) {
-			getClassAnnotationsFromDTO(config, description);
+	private ProtoDescription createDescription(Class<?> entityType, Object config, boolean resetAnnotations)
+			throws ProtoDefinitionException {
+		ProtoDescription description = new ProtoDescription(entityType);
+		if (resetAnnotations) {
+			getClassAnnotationsFromProto(config, description);
 		} else {
-			mergeClassAnnotationsFromDTO(config, description);
+			mergeClassAnnotationsFromProto(config, description);
 		}
 
-		Class<?> dtoType = getTemplateClass(config);
+		Class<?> protoType = getTemplateClass(config);
 		Class<?> targetType = description.getType();
 
-		for (Field f : dtoType.getDeclaredFields()) {
+		for (Field f : protoType.getDeclaredFields()) {
 			// avoid treating references to outer classes as fields
 			if (!f.getName().startsWith("this$")) {
-				FieldDescription desc = handleFieldFromDTO(config, f, targetType);
+				FieldDescription desc = handleFieldFromProto(config, f, targetType);
 				description.putField(desc);
 			}
 		}
 
 		for (Field f : targetType.getDeclaredFields()) {
-			FieldDescription desc = handleFieldFromEntityClass(override, description, dtoType, f);
+			FieldDescription desc = handleFieldFromEntityClass(resetAnnotations, description, protoType, f);
 			description.putField(desc);
 		}
 
-		for (Method m : dtoType.getDeclaredMethods()) {
-			MethodDescription desc = handleMethodFromDTO(m, targetType, override);
+		for (Method m : protoType.getDeclaredMethods()) {
+			MethodDescription desc = handleMethodFromProto(m, targetType, resetAnnotations);
 			description.putMethod(desc);
 		}
 
 		for (Method m : targetType.getDeclaredMethods()) {
-			MethodDescription desc = handleMethodFromEntityClass(override, description, m);
+			MethodDescription desc = handleMethodFromEntityClass(resetAnnotations, description, m);
 			description.putMethod(desc);
 		}
 
 		return description;
 	}
 
-	private MethodDescription handleMethodFromEntityClass(boolean override, DTODescription description, Method m) {
+	private MethodDescription handleMethodFromEntityClass(boolean override, ProtoDescription description, Method m) {
 		MethodDescription desc;
 		desc = description.getMethod(m.getName());
 		if (desc == null) {
@@ -234,15 +256,15 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return desc;
 	}
 
-	private MethodDescription handleMethodFromDTO(Method m, Class<?> targetType, boolean override)
-			throws DTODefinitionException {
+	private MethodDescription handleMethodFromProto(Method m, Class<?> targetType, boolean override)
+			throws ProtoDefinitionException {
 		MethodDescription method = new MethodDescription();
 		Method targetMethod = null;
 		try {
 			targetMethod = targetType.getDeclaredMethod(m.getName(), m.getParameterTypes());
 		} catch (NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();
-			throw new DTODefinitionException("You cannot define new methods in the template. "
+			throw new ProtoDefinitionException("You cannot define new methods in the template. "
 					+ "You can only re-define a method matching a "
 					+ "method present in the target class and re-define its " + "annotation-based configuration. "
 					+ "You can, otherwise, define a new field and Hyaline will "
@@ -262,20 +284,20 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return method;
 	}
 
-	private FieldDescription handleFieldFromEntityClass(boolean override, DTODescription description, Class<?> dtoType,
+	private FieldDescription handleFieldFromEntityClass(boolean resetAnnotations, ProtoDescription description, Class<?> protoType,
 			Field f) {
 		FieldDescription desc;
-		Field dtoField = null;
+		Field protoField = null;
 		try {
-			dtoField = dtoType.getDeclaredField(f.getName());
+			protoField = protoType.getDeclaredField(f.getName());
 		} catch (NoSuchFieldException | SecurityException e) {
 			// there is no field named like this in the DTO
 		}
-		if (dtoField == null) {
+		if (protoField == null) {
 			desc = new FieldDescription();
 			desc.setField(f);
 			desc.setInitialized(false);
-			if (!override) {
+			if (!resetAnnotations) {
 				// if there is no field with this name in the DTO
 				// and we start from the entity class, copy
 				// the annotations from such class
@@ -284,14 +306,14 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 				}
 			}
 		} else {
-			desc = description.getField(dtoField.getName());
-			if (!override) {
+			desc = description.getField(protoField.getName());
+			if (!resetAnnotations) {
 				// if there is a field with this name in the DTO
 				// and we start from the entity class, copy
 				// those annotations that are not present in the DTO
 				// from such class
 				for (Annotation annotation : f.getDeclaredAnnotations()) {
-					if (!dtoField.isAnnotationPresent(annotation.annotationType())) {
+					if (!protoField.isAnnotationPresent(annotation.annotationType())) {
 						desc.addAnnotation(annotation);
 					}
 				}
@@ -300,7 +322,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return desc;
 	}
 
-	private FieldDescription handleFieldFromDTO(Object config, Field f, Class<?> targetType) {
+	private FieldDescription handleFieldFromProto(Object config, Field f, Class<?> targetType) {
 		FieldDescription desc = new FieldDescription();
 		boolean initialized = ReflectionUtils.isFieldInitialized(config, f);
 		desc.setInitialized(initialized);
@@ -321,7 +343,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		return desc;
 	}
 
-	private void mergeClassAnnotationsFromDTO(Object config, DTODescription description) {
+	private void mergeClassAnnotationsFromProto(Object config, ProtoDescription description) {
 		Class<?> dtoType = getTemplateClass(config);
 		Annotation[] dtoTypeAnnotations = dtoType.getDeclaredAnnotations();
 		Annotation[] entityClassAnnotations = description.getType().getDeclaredAnnotations();
@@ -339,7 +361,7 @@ public class ReflectionBasedHyalineProxyFactory implements HyalineProxyFactory {
 		}
 	}
 
-	private void getClassAnnotationsFromDTO(Object config, DTODescription description) {
+	private void getClassAnnotationsFromProto(Object config, ProtoDescription description) {
 		Annotation[] declaredAnnotations = getTemplateClass(config).getDeclaredAnnotations();
 		if (declaredAnnotations != null) {
 			for (Annotation annotation : declaredAnnotations) {

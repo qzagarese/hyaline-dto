@@ -19,7 +19,7 @@ import org.hyalinedto.api.HyalinePrototype;
 import org.hyalinedto.core.ClassBuilder;
 import org.hyalinedto.core.exception.CannotBuildClassException;
 import org.hyalinedto.core.exception.FieldNotFoundException;
-import org.hyalinedto.core.reflect.DTODescription;
+import org.hyalinedto.core.reflect.ProtoDescription;
 import org.hyalinedto.core.reflect.FieldDescription;
 import org.hyalinedto.core.reflect.MethodDescription;
 import org.hyalinedto.core.reflect.ReflectionUtils;
@@ -29,7 +29,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	private final String TARGET_NAME_PREFIX = "__target_";
 
 	@Override
-	public Class<?> buildClass(DTODescription description, String proxyClassName) throws CannotBuildClassException {
+	public Class<?> buildClass(ProtoDescription description, String proxyClassName) throws CannotBuildClassException {
 		ClassPool classPool = ClassPool.getDefault();
 		Class<?> entityClass = description.getType();
 		CtClass hyalineProxyClass = classPool.makeClass(proxyClassName);
@@ -164,7 +164,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		}
 	}
 
-	private void handleFieldsDescriptions(DTODescription description, String targetFieldName, ClassPool classPool,
+	private void handleFieldsDescriptions(ProtoDescription description, String targetFieldName, ClassPool classPool,
 			CtClass hyalineProxyClass, ConstPool constpool) throws CannotCompileException, CannotBuildClassException {
 		// Here I create the necessary fields
 		for (FieldDescription field : description.getFields().values()) {
@@ -193,7 +193,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		}
 	}
 
-	private void handleMethodDescriptions(DTODescription description, String targetFieldName, ClassPool classPool,
+	private void handleMethodDescriptions(ProtoDescription description, String targetFieldName, ClassPool classPool,
 			CtClass hyalineProxyClass, ConstPool constpool) throws CannotCompileException, CannotBuildClassException {
 		for (MethodDescription method : description.getMethods().values()) {
 			// Handle only getters and setters
@@ -219,7 +219,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	}
 
 	private CtMethod createMethodFromDescription(ClassPool classPool, String targetFieldName, ConstPool constpool,
-			MethodDescription method, CtClass hyalineProxyClass, DTODescription description)
+			MethodDescription method, CtClass hyalineProxyClass, ProtoDescription description)
 			throws FieldNotFoundException, CannotCompileException, CannotBuildClassException {
 		String methodName = method.getMethod().getName();
 
@@ -260,7 +260,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		return ctMethod;
 	}
 
-	private void addClassAnnotations(DTODescription description, CtClass hyalineProxyClass, ConstPool constpool)
+	private void addClassAnnotations(ProtoDescription description, CtClass hyalineProxyClass, ConstPool constpool)
 			throws CannotBuildClassException {
 		if (description.getAnnotations() != null) {
 			AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);

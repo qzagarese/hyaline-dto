@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DTODescription {
+public class ProtoDescription {
 
 	private Class<?> type;
 
@@ -18,7 +18,7 @@ public class DTODescription {
 
 	private Map<String, MethodDescription> methods = new HashMap<String, MethodDescription>();
 
-	public DTODescription(Class<?> type) {
+	public ProtoDescription(Class<?> type) {
 		this.type = type;
 	}
 

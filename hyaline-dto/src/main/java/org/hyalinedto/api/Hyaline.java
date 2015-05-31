@@ -1,9 +1,9 @@
 package org.hyalinedto.api;
 
-import org.hyalinedto.core.HyalineProxyFactory;
+import org.hyalinedto.core.HyalineProtoFactory;
 import org.hyalinedto.core.exception.CannotInstantiateProxyException;
-import org.hyalinedto.core.proxy.ReflectionBasedHyalineProxyFactory;
-import org.hyalinedto.exception.DTODefinitionException;
+import org.hyalinedto.core.proxy.ReflectionBasedHyalineProtoFactory;
+import org.hyalinedto.exception.ProtoDefinitionException;
 import org.hyalinedto.exception.HyalineException;
 
 /**
@@ -16,7 +16,7 @@ import org.hyalinedto.exception.HyalineException;
 public class Hyaline {
 
 	/** The proxy factory. */
-	private static HyalineProxyFactory proxyFactory = new ReflectionBasedHyalineProxyFactory();
+	private static HyalineProtoFactory proxyFactory = new ReflectionBasedHyalineProtoFactory();
 
 	/**
 	 * It lets you create a new DTO from scratch.
@@ -32,7 +32,7 @@ public class Hyaline {
 	 *             if the dynamic type could be created.
 	 */
 	public static Object dtoFromScratch($ dtoTemplate) throws HyalineException {
-		return dtoFromScratch(new Object(), dtoTemplate, "Hyaline$Proxy$" + System.currentTimeMillis());
+		return dtoFromScratch(new Object(), dtoTemplate, "Hyaline$Proto$" + System.currentTimeMillis());
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class Hyaline {
 	public static <T> T dtoFromScratch(T entity, $ dtoTemplate, String proxyClassName) throws HyalineException {
 		try {
 			return createDTO(entity, dtoTemplate, true, proxyClassName);
-		} catch (CannotInstantiateProxyException | DTODefinitionException e) {
+		} catch (CannotInstantiateProxyException | ProtoDefinitionException e) {
 			e.printStackTrace();
 			throw new HyalineException();
 		}
@@ -169,7 +169,7 @@ public class Hyaline {
 	public static <T> T dtoFromClass(T entity, $ dtoTemplate, String proxyClassName) throws HyalineException {
 		try {
 			return createDTO(entity, dtoTemplate, false, proxyClassName);
-		} catch (CannotInstantiateProxyException | DTODefinitionException e) {
+		} catch (CannotInstantiateProxyException | ProtoDefinitionException e) {
 			e.printStackTrace();
 			throw new HyalineException();
 		}
@@ -177,7 +177,7 @@ public class Hyaline {
 
 	@SuppressWarnings("unchecked")
 	private static <T> T createDTO(T entity, $ dtoTemplate, boolean resetAnnotations, String proxyClassName)
-			throws CannotInstantiateProxyException, DTODefinitionException {
+			throws CannotInstantiateProxyException, ProtoDefinitionException {
 		return (T) proxyFactory.create(entity, dtoTemplate, resetAnnotations, proxyClassName);
 	}
 
@@ -186,7 +186,7 @@ public class Hyaline {
 	 *
 	 * @return the proxy factory
 	 */
-	public static HyalineProxyFactory getProxyFactory() {
+	public static HyalineProtoFactory getProxyFactory() {
 		return proxyFactory;
 	}
 
@@ -196,7 +196,7 @@ public class Hyaline {
 	 * @param proxyFactory
 	 *            the new proxy factory
 	 */
-	public static void setProxyFactory(HyalineProxyFactory proxyFactory) {
+	public static void setProxyFactory(HyalineProtoFactory proxyFactory) {
 		Hyaline.proxyFactory = proxyFactory;
 	}
 	

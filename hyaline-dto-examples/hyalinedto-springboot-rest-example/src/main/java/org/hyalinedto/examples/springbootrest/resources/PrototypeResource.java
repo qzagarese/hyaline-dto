@@ -44,6 +44,11 @@ public class PrototypeResource {
 			
 			@JsonProperty("stringified") String addressAsString = john.getAddress().toString();
 			
+			
+			public void doSomething() {
+				System.out.println(john.getAddress().toString());
+			}
+			
 		}).build();
 		
 	}

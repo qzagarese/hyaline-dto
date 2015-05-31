@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 
 import org.hyalinedto.api.$;
 import org.hyalinedto.api.Hyaline;
-import org.hyalinedto.api.HyalinePrototype;
+import org.hyalinedto.api.Proto;
 import org.hyalinedto.exception.HyalineException;
 import org.hyalinedto.test.annotations.TestFieldAnnotation;
 import org.hyalinedto.test.annotations.TestFieldAnnotationWithAnnotationMember;
@@ -107,7 +107,7 @@ public class DTOFromScratchTest {
 			private String name = john.getFirstName();
 
 		});
-		HyalinePrototype hyalineDTO = (HyalinePrototype) dto;
+		Proto hyalineDTO = (Proto) dto;
 
 		assertEquals(hyalineDTO.getAttribute("name"), john.getFirstName());
 
@@ -133,7 +133,7 @@ public class DTOFromScratchTest {
 
 		});
 
-		HyalinePrototype proxy = (HyalinePrototype) dto;
+		Proto proxy = (Proto) dto;
 		assertEquals(john.getLastName(), proxy.getAttribute("surname"));
 
 	}
@@ -146,7 +146,7 @@ public class DTOFromScratchTest {
 		});
 
 		dto.setFirstName("Paul");
-		HyalinePrototype proxy = (HyalinePrototype) dto;
+		Proto proxy = (Proto) dto;
 
 		assertEquals(dto.getFirstName(), proxy.getAttribute("firstName"));
 	}
@@ -158,7 +158,7 @@ public class DTOFromScratchTest {
 
 		});
 
-		HyalinePrototype proxy = (HyalinePrototype) dto;
+		Proto proxy = (Proto) dto;
 
 		proxy.setAttribute("firstName", "Paul");
 

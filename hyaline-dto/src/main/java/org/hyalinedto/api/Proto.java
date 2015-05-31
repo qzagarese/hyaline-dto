@@ -40,7 +40,7 @@ package org.hyalinedto.api;
  * @author Quirino Zagarese
  *
  */
-public interface HyalinePrototype {
+public interface Proto {
 
 	/**
 	 * Sets the field named "name" to value "value". This will not overwrite the

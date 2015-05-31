@@ -8,6 +8,8 @@ import java.util.List;
 public class MethodDescription {
 
 	private Method method;
+	
+	private boolean fromTemplate = false;
 
 	private List<Annotation> annotations = new ArrayList<Annotation>();
 
@@ -29,6 +31,14 @@ public class MethodDescription {
 
 	public void addAnnotation(Annotation annotation) {
 		annotations.add(annotation);
+	}
+
+	public boolean isFromTemplate() {
+		return fromTemplate;
+	}
+
+	public void setFromTemplate(boolean fromTemplate) {
+		this.fromTemplate = fromTemplate;
 	}
 
 }

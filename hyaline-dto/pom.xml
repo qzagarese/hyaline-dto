@@ -3,12 +3,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.hyalinedto</groupId>
-	<artifactId>hyalinedto</artifactId>
-	<version>0.9.1</version>
+	<artifactId>prototypes</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<name>Hyaline DTO</name>
-	<description>A Java library for dynamic creation of Data Transfer Objects</description>
-	<url>http://www.example.com/example-application</url>
+	<name>Hyaline Prototypes</name>
+	<description>A Java library for Prototype Objects</description>
 
 	<properties>
 		<javassist.version>3.18.2-GA</javassist.version>

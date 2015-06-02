@@ -72,6 +72,6 @@ public interface Proto {
 	 * 
 	 * @return
 	 */
-	String obtainTargetFieldName();
+	String obtainPrototypeInstanceFieldName();
 
 }

@@ -1,6 +1,7 @@
 package org.hyalinedto.core.reflect;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,9 +9,9 @@ import java.util.Map;
 
 public class ProtoDescription {
 
-	private Class<?> type;
+	private Class<?> superType;
 
-	private List<Class<?>> implementedInterfaces = new ArrayList<Class<?>>();
+	private Class<?> protoType;
 
 	private List<Annotation> annotations = new ArrayList<Annotation>();
 
@@ -18,12 +19,17 @@ public class ProtoDescription {
 
 	private Map<String, MethodDescription> methods = new HashMap<String, MethodDescription>();
 
-	public ProtoDescription(Class<?> type) {
-		this.type = type;
+	public ProtoDescription(Class<?> superType, Class<?> protoType) {
+		this.superType = superType;
+		this.protoType = protoType;
 	}
 
-	public Class<?> getType() {
-		return type;
+	public Class<?> getSuperType() {
+		return superType;
+	}
+
+	public Class<?> getProtoType() {
+		return protoType;
 	}
 
 	public List<Annotation> getAnnotations() {
@@ -59,31 +65,27 @@ public class ProtoDescription {
 	}
 
 	public void putMethod(MethodDescription method) {
-		methods.put(method.getMethod().getName(), method);
-	}
-
-	public List<Class<?>> getImplementedInterfaces() {
-		return implementedInterfaces;
-	}
-
-	public void setImplementedInterfaces(List<Class<?>> implementedInterfaces) {
-		this.implementedInterfaces = implementedInterfaces;
-	}
-
-	public void addImplementedInterface(Class<?> type) {
-		if (implementedInterfaces == null) {
-			implementedInterfaces = new ArrayList<Class<?>>();
-		}
-		if (type.isInterface()) {
-			implementedInterfaces.add(type);
-		}
+		methods.put(getSignature(method.getMethod()), method);
 	}
 
 	public FieldDescription getField(String name) {
 		return fields.get(name);
 	}
 
-	public MethodDescription getMethod(String name) {
-		return methods.get(name);
+	public MethodDescription getMethod(Method m) {
+		return methods.get(getSignature(m));
 	}
+
+	private String getSignature(Method m) {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(m.getReturnType().getCanonicalName());
+		buffer.append("_");
+		buffer.append(m.getName()).append("(");
+		for (Class<?> c : m.getParameterTypes()) {
+			buffer.append(c.getCanonicalName()).append("_");
+		}
+		buffer.append(")");
+		return buffer.toString();
+	}
+
 }

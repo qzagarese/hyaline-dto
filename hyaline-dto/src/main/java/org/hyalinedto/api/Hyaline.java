@@ -3,8 +3,8 @@ package org.hyalinedto.api;
 import org.hyalinedto.core.HyalineProtoFactory;
 import org.hyalinedto.core.exception.CannotInstantiateProxyException;
 import org.hyalinedto.core.proxy.ReflectionBasedHyalineProtoFactory;
-import org.hyalinedto.exception.ProtoDefinitionException;
 import org.hyalinedto.exception.HyalineException;
+import org.hyalinedto.exception.ProtoDefinitionException;
 
 /**
  * The Class Hyaline. It is the entry point for this library and allows you to

@@ -13,9 +13,9 @@ import org.hyalinedto.core.HyalineProtoFactory;
 import org.hyalinedto.core.build.JavassistBasedClassBuilder;
 import org.hyalinedto.core.exception.CannotBuildClassException;
 import org.hyalinedto.core.exception.CannotInstantiateProxyException;
-import org.hyalinedto.core.reflect.ProtoDescription;
 import org.hyalinedto.core.reflect.FieldDescription;
 import org.hyalinedto.core.reflect.MethodDescription;
+import org.hyalinedto.core.reflect.ProtoDescription;
 import org.hyalinedto.core.reflect.ReflectionUtils;
 import org.hyalinedto.exception.ProtoDefinitionException;
 
@@ -33,7 +33,8 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 	}
 
 	@Override
-	public void setClassRepository(ClassRepository<String, Class<?>> classRepository) {
+	public void setClassRepository(
+			ClassRepository<String, Class<?>> classRepository) {
 		this.classRepository = classRepository;
 	}
 
@@ -47,25 +48,32 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		this.classBuilder = classBuilder;
 	}
 
-	public <T> Object create(T superClassInstance, Object protoTemplate, boolean resetAnnotations, String protoClassName)
+	public <T> Object create(T superClassInstance, Object protoTemplate,
+			boolean resetAnnotations, String protoClassName)
 			throws CannotInstantiateProxyException, ProtoDefinitionException {
 		// check if a proto definition for the template class already exists
-		Class<?> protoTemplateClass = getTemplateClass(protoTemplate);
+		Class<?> protoTemplateClass = getProtoTemplateClass(protoTemplate);
 		if (protoTemplateClass != protoTemplate.getClass()) {
-			protoTemplate = findTemplateInstance(protoTemplateClass, protoTemplate.getClass(), protoTemplate);
+			protoTemplate = findTemplateInstance(protoTemplateClass,
+					protoTemplate.getClass(), protoTemplate);
 			if (protoTemplate == null) {
-				throw new ProtoDefinitionException("Could not find an initialized field of type "
-						+ protoTemplateClass.getName() + " in prototype definition.");
+				throw new ProtoDefinitionException(
+						"Could not find an initialized field of type "
+								+ protoTemplateClass.getName()
+								+ " in prototype definition.");
 			}
 		}
 
-		// check if a prototype description for the template class already exists
-		ProtoDescription description = protoDescriptions.get(protoTemplateClass.getName());
+		// check if a prototype description for the template class already
+		// exists
+		ProtoDescription description = protoDescriptions.get(protoTemplateClass
+				.getName());
 
-		// if not, create a description for the prototype definition and save it for
-		// future invocations
+		// if not, create a description for the prototype definition and save it
+		// for future invocations
 		if (description == null) {
-			description = createDescription(superClassInstance.getClass(), protoTemplate, resetAnnotations);
+			description = createDescription(superClassInstance.getClass(),
+					protoTemplate, resetAnnotations);
 			protoDescriptions.put(protoTemplateClass.getName(), description);
 		}
 
@@ -83,9 +91,11 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		Object proto = null;
 		try {
 			proto = protoType.newInstance();
-			injectSuperClassInstance(proto, description, superClassInstance);
-			injectAllFields(proto, description, protoTemplate, superClassInstance);
-		} catch (InstantiationException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			injectPrototypeTemplateInstance(proto, protoTemplate);
+			injectAllFields(proto, description, protoTemplate,
+					superClassInstance);
+		} catch (InstantiationException | IllegalAccessException
+				| NoSuchFieldException | SecurityException e) {
 			e.printStackTrace();
 			throw new CannotInstantiateProxyException();
 		}
@@ -93,50 +103,62 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return proto;
 	}
 
-	private void injectSuperClassInstance(Object proto, ProtoDescription description, Object superClassInstance) throws NoSuchFieldException,
-			SecurityException, IllegalArgumentException, IllegalAccessException {
+	private void injectPrototypeTemplateInstance(Object proto, Object protoInstance)
+			throws NoSuchFieldException, SecurityException,
+			IllegalArgumentException, IllegalAccessException {
 		Proto hyalinePrototype = (Proto) proto;
-		Field field = proto.getClass().getDeclaredField(hyalinePrototype.obtainTargetFieldName());
-		ReflectionUtils.injectField(field, proto, superClassInstance);
+		Field field = proto.getClass().getDeclaredField(
+				hyalinePrototype.obtainPrototypeInstanceFieldName());
+		ReflectionUtils.injectField(field, proto, protoInstance);
 	}
 
-	private void injectAllFields(Object proto, ProtoDescription description, Object protoTemplate, Object superClassInstance)
-			throws IllegalArgumentException, IllegalAccessException,  SecurityException, NoSuchFieldException {
+	private void injectAllFields(Object proto, ProtoDescription description,
+			Object protoTemplate, Object superClassInstance)
+			throws IllegalArgumentException, IllegalAccessException,
+			SecurityException, NoSuchFieldException {
 		for (FieldDescription field : description.getFields().values()) {
 
 			Field proxyField = null;
 			try {
-				proxyField = proto.getClass().getDeclaredField(field.getField().getName());
+				proxyField = proto.getClass().getDeclaredField(
+						field.getField().getName());
 			} catch (NoSuchFieldException e) {
-				// proto does not have this field because it cannot inherit it (e.g. it was a final field)
+				// proto does not have this field because it cannot inherit it
+				// (e.g. it was a final field)
 			}
 
 			if (proxyField != null) {
 				Object value = null;
 				if (field.isFromTemplate() || field.isInitialized()) {
-					value = ReflectionUtils.getFieldValue(field.getField(), protoTemplate);
+					value = ReflectionUtils.getFieldValue(field.getField(),
+							protoTemplate);
 				} else {
 					// if the template redefines the field but does not
-					// initialises it, retrieve the corresponding field 
+					// initialises it, retrieve the corresponding field
 					// from super class and get its value
 					Field f = field.getField();
-					if (!f.getDeclaringClass().equals(description.getType())) {
-						f = description.getType().getDeclaredField(f.getName());
+					if (!f.getDeclaringClass().equals(description.getSuperType())) {
+						f = description.getSuperType().getDeclaredField(f.getName());
 					}
-					value = ReflectionUtils.getFieldValue(f, superClassInstance);
+					value = ReflectionUtils
+							.getFieldValue(f, superClassInstance);
 				}
 				ReflectionUtils.injectField(proxyField, proto, value);
 			}
 		}
 	}
 
-	private Object findTemplateInstance(Class<?> actualProtoTemplateClass, Class<?> protoTemplateDefinitionClass, Object protoTemplate) {
-		// if there is an inner class inside the proto template, 
+	private Object findTemplateInstance(Class<?> actualProtoTemplateClass,
+			Class<?> protoTemplateDefinitionClass, Object protoTemplate) {
+		// if there is an inner class inside the proto template,
 		// hyaline picks that one as template (actualProtoTemplateClass)
-		// protoTemplateDefinitionClass is the anonymous class (the $) that is not used in this case. 
-		// This is an exceptional case that allows the client to place annotations on the newly 
+		// protoTemplateDefinitionClass is the anonymous class (the $) that is
+		// not used in this case.
+		// This is an exceptional case that allows the client to place
+		// annotations on the newly
 		// defined type (annotations are placed on the inner class).
-		// In this case, an initialised field of type "actualProtoTemplateClass" must be provided.
+		// In this case, an initialised field of type "actualProtoTemplateClass"
+		// must be provided.
 		// This method looks for such field
 		/**
 		 * 
@@ -144,16 +166,17 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		 * 
 		 * proto(new $(){ // <-- Here starts protoTemplateDefinitionClass
 		 * 
-		 * 		ActualProtoTemplateClass inst = new ActualProtoTemplateClass(); // we are looking for this
-		 * 		
-		 * 		@AnyAnnotation // this way we can put annotations on the prototype class
-		 * 		class ActualProtoTemplateClass() {
+		 * ActualProtoTemplateClass inst = new ActualProtoTemplateClass(); // we
+		 * are looking for this
 		 * 
-		 * 			String anyField = "whatever.";		
+		 * @AnyAnnotation // this way we can put annotations on the prototype
+		 *                class class ActualProtoTemplateClass() {
 		 * 
-		 * 		}
-		 * 	
-		 * });
+		 *                String anyField = "whatever.";
+		 * 
+		 *                }
+		 * 
+		 *                });
 		 * 
 		 */
 		Object value = null;
@@ -172,7 +195,7 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return value;
 	}
 
-	private Class<?> getTemplateClass(Object protoTemplate) {
+	private Class<?> getProtoTemplateClass(Object protoTemplate) {
 		Class<?> templateClass = null;
 		Class<?>[] innerClasses = protoTemplate.getClass().getDeclaredClasses();
 		if (innerClasses != null && innerClasses.length > 0) {
@@ -183,8 +206,8 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return templateClass;
 	}
 
-	private Class<?> buildProtoClass(ProtoDescription description, String proxyClassName)
-			throws CannotInstantiateProxyException {
+	private Class<?> buildProtoClass(ProtoDescription description,
+			String proxyClassName) throws CannotInstantiateProxyException {
 		Class<?> proxyClass = null;
 		try {
 			proxyClass = classBuilder.buildClass(description, proxyClassName);
@@ -195,58 +218,65 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return proxyClass;
 	}
 
-	private ProtoDescription createDescription(Class<?> superClassType, Object protoTemplate, boolean resetAnnotations)
+	private ProtoDescription createDescription(Class<?> superClassType,
+			Object protoTemplate, boolean resetAnnotations)
 			throws ProtoDefinitionException {
-		ProtoDescription description = new ProtoDescription(superClassType);
+		ProtoDescription description = new ProtoDescription(superClassType, getProtoTemplateClass(protoTemplate));
 		if (resetAnnotations) {
 			getClassAnnotationsFromProto(protoTemplate, description);
 		} else {
 			mergeClassAnnotationsFromProto(protoTemplate, description);
 		}
 
-		Class<?> protoType = getTemplateClass(protoTemplate);
+		Class<?> protoType = getProtoTemplateClass(protoTemplate);
 
 		for (Field f : protoType.getDeclaredFields()) {
 			// avoid treating references to outer classes as fields
 			if (!f.getName().startsWith("this$")) {
-				FieldDescription desc = handleFieldFromProto(protoTemplate, f, superClassType);
+				FieldDescription desc = handleFieldFromProto(protoTemplate, f,
+						superClassType);
 				description.putField(desc);
 			}
 		}
 
 		for (Field f : superClassType.getDeclaredFields()) {
-			FieldDescription desc = handleFieldFromSuperClass(resetAnnotations, description, protoType, f);
+			FieldDescription desc = handleFieldFromSuperClass(resetAnnotations,
+					description, protoType, f);
 			description.putField(desc);
 		}
 
 		for (Method m : protoType.getDeclaredMethods()) {
-			MethodDescription desc = handleMethodFromProto(m, superClassType, resetAnnotations);
+			MethodDescription desc = handleMethodFromProto(m, superClassType,
+					resetAnnotations);
 			description.putMethod(desc);
 		}
 
 		for (Method m : superClassType.getDeclaredMethods()) {
-			MethodDescription desc = handleMethodFromSuperClass(resetAnnotations, description, m);
+			MethodDescription desc = handleMethodFromSuperClass(
+					resetAnnotations, description, m);
 			description.putMethod(desc);
 		}
 
 		return description;
 	}
 
-	private MethodDescription handleMethodFromSuperClass(boolean override, ProtoDescription description, Method m) {
+	private MethodDescription handleMethodFromSuperClass(boolean override,
+			ProtoDescription description, Method superTypeMethod) {
 		MethodDescription desc;
-		desc = description.getMethod(m.getName());
+		desc = description.getMethod(superTypeMethod);
 		if (desc == null) {
 			desc = new MethodDescription();
-			desc.setMethod(m);
+			desc.setMethod(superTypeMethod);
 			if (!override) {
-				for (Annotation annotation : m.getDeclaredAnnotations()) {
+				for (Annotation annotation : superTypeMethod.getDeclaredAnnotations()) {
 					desc.addAnnotation(annotation);
 				}
 			}
 		} else {
 			if (!override) {
-				for (Annotation annotation : m.getDeclaredAnnotations()) {
-					if (!desc.getMethod().isAnnotationPresent(annotation.annotationType())) {
+				for (Annotation annotation : superTypeMethod.getDeclaredAnnotations()) {
+					if (!desc.getMethod().isAnnotationPresent(
+							annotation.annotationType())) {
 						desc.addAnnotation(annotation);
 					}
 				}
@@ -255,34 +285,39 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return desc;
 	}
 
-	private MethodDescription handleMethodFromProto(Method m, Class<?> targetType, boolean resetAnnotations)
-			throws ProtoDefinitionException {
-		MethodDescription method = new MethodDescription();
-		Method targetMethod = null;
+	private MethodDescription handleMethodFromProto(Method protoTypeMethod,
+			Class<?> superClassType, boolean resetAnnotations) {
+		MethodDescription methodDescription = new MethodDescription();
+		Method superClassMethod = null;
 		try {
-			targetMethod = targetType.getDeclaredMethod(m.getName(), m.getParameterTypes());
-			method.setMethod(targetMethod);
+			superClassMethod = superClassType.getDeclaredMethod(
+					protoTypeMethod.getName(),
+					protoTypeMethod.getParameterTypes());
 		} catch (NoSuchMethodException | SecurityException e) {
 			// this method has been added in the prototype template
-			method.setMethod(m);
-			method.setFromTemplate(true);
+
 		}
-		
-		for (Annotation annotation : m.getDeclaredAnnotations()) {
-			method.addAnnotation(annotation);
+		methodDescription.setMethod(protoTypeMethod);
+		methodDescription.setFromTemplate(true);
+
+		for (Annotation annotation : protoTypeMethod.getDeclaredAnnotations()) {
+			methodDescription.addAnnotation(annotation);
 		}
-		if (!resetAnnotations) {
-			for (Annotation annotation : targetMethod.getDeclaredAnnotations()) {
-				if (!m.isAnnotationPresent(annotation.annotationType())) {
-					method.addAnnotation(annotation);
+		if ((superClassMethod != null) && !resetAnnotations) {
+			for (Annotation annotation : superClassMethod
+					.getDeclaredAnnotations()) {
+				if (!protoTypeMethod.isAnnotationPresent(annotation
+						.annotationType())) {
+					methodDescription.addAnnotation(annotation);
 				}
 			}
 		}
-		return method;
+		return methodDescription;
 	}
 
-	private FieldDescription handleFieldFromSuperClass(boolean resetAnnotations, ProtoDescription description, Class<?> protoType,
-			Field f) {
+	private FieldDescription handleFieldFromSuperClass(
+			boolean resetAnnotations, ProtoDescription description,
+			Class<?> protoType, Field f) {
 		FieldDescription desc;
 		Field protoField = null;
 		try {
@@ -310,7 +345,8 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 				// those annotations that are not present in the DTO
 				// from such class
 				for (Annotation annotation : f.getDeclaredAnnotations()) {
-					if (!protoField.isAnnotationPresent(annotation.annotationType())) {
+					if (!protoField.isAnnotationPresent(annotation
+							.annotationType())) {
 						desc.addAnnotation(annotation);
 					}
 				}
@@ -319,7 +355,8 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return desc;
 	}
 
-	private FieldDescription handleFieldFromProto(Object config, Field f, Class<?> targetType) {
+	private FieldDescription handleFieldFromProto(Object config, Field f,
+			Class<?> targetType) {
 		FieldDescription desc = new FieldDescription();
 		boolean initialized = ReflectionUtils.isFieldInitialized(config, f);
 		desc.setInitialized(initialized);
@@ -340,10 +377,12 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		return desc;
 	}
 
-	private void mergeClassAnnotationsFromProto(Object config, ProtoDescription description) {
-		Class<?> dtoType = getTemplateClass(config);
+	private void mergeClassAnnotationsFromProto(Object config,
+			ProtoDescription description) {
+		Class<?> dtoType = getProtoTemplateClass(config);
 		Annotation[] dtoTypeAnnotations = dtoType.getDeclaredAnnotations();
-		Annotation[] entityClassAnnotations = description.getType().getDeclaredAnnotations();
+		Annotation[] entityClassAnnotations = description.getSuperType()
+				.getDeclaredAnnotations();
 		if (dtoTypeAnnotations != null) {
 			for (Annotation annotation : dtoTypeAnnotations) {
 				description.addAnnotation(annotation);
@@ -358,8 +397,10 @@ public class ReflectionBasedHyalineProtoFactory implements HyalineProtoFactory {
 		}
 	}
 
-	private void getClassAnnotationsFromProto(Object config, ProtoDescription description) {
-		Annotation[] declaredAnnotations = getTemplateClass(config).getDeclaredAnnotations();
+	private void getClassAnnotationsFromProto(Object config,
+			ProtoDescription description) {
+		Annotation[] declaredAnnotations = getProtoTemplateClass(config)
+				.getDeclaredAnnotations();
 		if (declaredAnnotations != null) {
 			for (Annotation annotation : declaredAnnotations) {
 				description.addAnnotation(annotation);

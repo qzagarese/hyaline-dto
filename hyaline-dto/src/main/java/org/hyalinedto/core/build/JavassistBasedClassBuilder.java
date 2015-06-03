@@ -1,5 +1,6 @@
 package org.hyalinedto.core.build;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import javassist.CannotCompileException;
@@ -185,7 +186,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 
 	private void handleFieldsDescriptions(ProtoDescription description,
 			String protoTemplateFieldName, ClassPool classPool,
-			CtClass hyalineProxyClass, ConstPool constpool)
+			CtClass hyalineProtoClass, ConstPool constpool)
 			throws CannotCompileException, CannotBuildClassException {
 		// Here I create the necessary fields
 		for (FieldDescription field : description.getFields().values()) {
@@ -201,19 +202,19 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 						|| ((!Modifier.isPrivate(modifiers)) && (!Modifier
 								.isFinal(modifiers)))) {
 					CtField ctField = createFieldFromDescription(classPool,
-							constpool, field, hyalineProxyClass);
+							constpool, field, hyalineProtoClass);
 
-					hyalineProxyClass.addField(ctField);
+					hyalineProtoClass.addField(ctField);
 
 					// Generate a getter and a setter for fields defined in
 					// template
 					if (field.isFromTemplate()) {
 						CtMethod getter = createGetter(field,
-								protoTemplateFieldName, hyalineProxyClass);
-						hyalineProxyClass.addMethod(getter);
+								protoTemplateFieldName, hyalineProtoClass);
+						hyalineProtoClass.addMethod(getter);
 						CtMethod setter = createSetter(field,
-								protoTemplateFieldName, hyalineProxyClass);
-						hyalineProxyClass.addMethod(setter);
+								protoTemplateFieldName, hyalineProtoClass);
+						hyalineProtoClass.addMethod(setter);
 					}
 				}
 			}
@@ -221,38 +222,118 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	}
 
 	private void handleMethodDescriptions(ProtoDescription description,
-			String targetFieldName, ClassPool classPool,
-			CtClass hyalineProxyClass, ConstPool constpool)
+			String protoTemplateFieldName, ClassPool classPool,
+			CtClass hyalineProtoClass, ConstPool constpool)
 			throws CannotCompileException, CannotBuildClassException {
 		for (MethodDescription method : description.getMethods().values()) {
-			// Handle only getters and setters
 			String methodName = method.getMethod().getName();
+			CtMethod ctMethod = null;
+			if (!method.isFromTemplate()) {
+				// check the method is not final
+				if (!Modifier.isFinal(method.getMethod().getModifiers())) {
+					// for inherited methods, handle only getters and setters
+					if (methodName.startsWith("get")
+							|| methodName.startsWith("set")
+							|| methodName.startsWith("is")) {
 
-			// check the method is not final
-			if (!Modifier.isFinal(method.getMethod().getModifiers())) {
-				if (methodName.startsWith("get")
-						|| methodName.startsWith("set")
-						|| methodName.startsWith("is")) {
-					CtMethod ctMethod;
-					try {
-						ctMethod = createMethodFromDescription(classPool,
-								targetFieldName, constpool, method,
-								hyalineProxyClass, description);
-						if (ctMethod != null) {
-							// could correlate method name to accessed field
-							hyalineProxyClass.addMethod(ctMethod);
+						try {
+							ctMethod = createAccessorFromDescription(classPool,
+									protoTemplateFieldName, constpool, method,
+									hyalineProtoClass, description);
+
+						} catch (FieldNotFoundException e) {
+							e.printStackTrace();
 						}
-					} catch (FieldNotFoundException e) {
-						e.printStackTrace();
 					}
 				}
+			} else {
+				ctMethod = createProtoTemplateInvokerMethod(classPool,
+						protoTemplateFieldName, constpool, method,
+						hyalineProtoClass, description);
+			}
+
+			if (ctMethod != null) {
+				// could generate the method, so add it to the class
+				hyalineProtoClass.addMethod(ctMethod);
 			}
 		}
 	}
 
-	private CtMethod createMethodFromDescription(ClassPool classPool,
-			String targetFieldName, ConstPool constpool,
-			MethodDescription method, CtClass hyalineProxyClass,
+	private CtMethod createProtoTemplateInvokerMethod(ClassPool classPool,
+			String protoTemplateFieldName, ConstPool constpool,
+			MethodDescription methodDescription, CtClass hyalineProtoClass,
+			ProtoDescription description) {
+		StringBuffer buffer = new StringBuffer("{");
+		Method m = methodDescription.getMethod();
+
+		// create parameterTypes and args arrays for reflective call
+		int numberOfArgs = m.getParameterTypes().length;
+		buffer.append("Class[] parameterTypes = new Class[")
+				.append(numberOfArgs).append("];");
+		buffer.append("Object[] args = new Object[").append(numberOfArgs)
+				.append("];");
+		for (int i = 0; i < numberOfArgs; i++) {
+			// fill types and args arrays
+			Class<?> paramType = m.getParameterTypes()[i];
+			buffer.append("parameterTypes[").append(i).append("] = ")
+					.append(paramType.getCanonicalName()).append(".class;");
+			buffer.append("args[").append(i).append("] = $").append(i + 1)
+					.append(";");
+		}
+		// if return type is not void, assign result to an object to be returned
+		if (!m.getReturnType().equals(Void.class)
+				&& !m.getReturnType().getCanonicalName().endsWith("void")) {
+			buffer.append("Object result = ");
+		}
+		// invoke the proto template method reflectively
+		buffer.append(ReflectionUtils.class.getCanonicalName()).append(
+				".invokeMethod(this.");
+		buffer.append(protoTemplateFieldName).append(", \"")
+				.append(m.getName()).append("\", parameterTypes, args)");
+		// if return type is not void, cast the result to such type and return
+		// it
+		if (!m.getReturnType().equals(Void.class)
+				&& !m.getReturnType().getCanonicalName().endsWith("void")) {
+			buffer.append("return (")
+					.append(m.getReturnType().getCanonicalName())
+					.append(") result;");
+		}
+		buffer.append("}");
+		CtMethod method = null;
+		try {
+			CtClass[] exceptions = new CtClass[m.getExceptionTypes().length];
+			CtClass[] parameters = new CtClass[numberOfArgs];
+			for (int i = 0; i < numberOfArgs; i++) {
+				parameters[i] = classPool.get(m.getParameterTypes()[i]
+						.getCanonicalName());
+			}
+			for (int i = 0; i < m.getExceptionTypes().length; i++) {
+				exceptions[i] = classPool.get(m.getExceptionTypes()[i]
+						.getCanonicalName());
+			}
+			method = CtNewMethod.make(m.getModifiers(),
+					classPool.get(m.getReturnType().getCanonicalName()),
+					m.getName(), parameters, exceptions, buffer.toString(),
+					hyalineProtoClass);
+		} catch (CannotCompileException | NotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (method != null) {
+			// finally copy annotations
+			try {
+				copyAnnotationsToCtMethod(constpool, methodDescription, method);
+			} catch (CannotBuildClassException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return method;
+	}
+
+	private CtMethod createAccessorFromDescription(ClassPool classPool,
+			String protoTemplateFieldName, ConstPool constpool,
+			MethodDescription method, CtClass hyalineProtoClass,
 			ProtoDescription description) throws FieldNotFoundException,
 			CannotCompileException, CannotBuildClassException {
 		String methodName = method.getMethod().getName();
@@ -270,38 +351,44 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		FieldDescription field = description.getField(fieldName);
 		CtMethod ctMethod = null;
 
-		// if it is a proxy, don't create a getter or a setter
+		// if it is a proto, don't create a getter or a setter
 		if (field != null
 				&& !field.getField().getName()
 						.startsWith(PROTO_TEMPLATE_NAME_PREFIX)) {
 			// the method name can be connected to a field name
 			// create a getter or a setter based on method name
 			if (methodName.startsWith("is") || methodName.startsWith("get")) {
-				ctMethod = createGetter(field, targetFieldName,
-						hyalineProxyClass);
+				ctMethod = createGetter(field, protoTemplateFieldName,
+						hyalineProtoClass);
 			} else {
-				ctMethod = createSetter(field, targetFieldName,
-						hyalineProxyClass);
+				ctMethod = createSetter(field, protoTemplateFieldName,
+						hyalineProtoClass);
 			}
 			// finally copy annotations
-			if (method.getAnnotations() != null
-					&& method.getAnnotations().size() > 0) {
-				AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
-						AnnotationsAttribute.visibleTag);
-				for (java.lang.annotation.Annotation annotation : method
-						.getAnnotations()) {
-					Annotation annotationCopy = JavassistUtils
-							.createJavassistAnnotation(constpool, annotation);
-					attr.addAnnotation(annotationCopy);
-				}
-				ctMethod.getMethodInfo().addAttribute(attr);
-			}
+			copyAnnotationsToCtMethod(constpool, method, ctMethod);
 		} else {
 			// cannot find correlation between this method and a field name.
-			// Ignore this method since it will be inherited by the proxy.
+			// Ignore this method since it will be inherited by the proto.
 		}
 
 		return ctMethod;
+	}
+
+	private void copyAnnotationsToCtMethod(ConstPool constpool,
+			MethodDescription method, CtMethod ctMethod)
+			throws CannotBuildClassException {
+		if (method.getAnnotations() != null
+				&& method.getAnnotations().size() > 0) {
+			AnnotationsAttribute attr = new AnnotationsAttribute(constpool,
+					AnnotationsAttribute.visibleTag);
+			for (java.lang.annotation.Annotation annotation : method
+					.getAnnotations()) {
+				Annotation annotationCopy = JavassistUtils
+						.createJavassistAnnotation(constpool, annotation);
+				attr.addAnnotation(annotationCopy);
+			}
+			ctMethod.getMethodInfo().addAttribute(attr);
+		}
 	}
 
 	private void addClassAnnotations(ProtoDescription description,
@@ -342,24 +429,20 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 	}
 
 	private CtMethod createSetter(FieldDescription field,
-			String targetFieldName, CtClass hyalineProxyClass)
+			String protoTemplateFieldName, CtClass hyalineProtoClass)
 			throws CannotCompileException, CannotBuildClassException {
 		String fieldName = field.getField().getName();
 		String methodName = "set" + fieldName.substring(0, 1).toUpperCase()
 				+ fieldName.substring(1);
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("{");
-		// if this method overrides a method from the entity class
-		// and the field has not been initialized in the template
-		// invoke the superclass method first
-		if (!field.isFromTemplate() && !field.isInitialized()) {
-			// Check whether target is null to avoid NPE after deserialization
-			buffer.append("if(").append(targetFieldName).append(" != null) { ");
-			buffer.append(targetFieldName).append(".").append(methodName)
-					.append("($1);");
-			buffer.append("}");
+		if (field.isFromTemplate()) {
+			// set the value on the prototype template instance
+			buffer.append(ReflectionUtils.class.getCanonicalName())
+					.append(".injectField(\"").append(fieldName).append("\", ")
+					.append("this.").append(protoTemplateFieldName)
+					.append(", $1);");
 		}
-
 		// assign the argument value to the field
 		buffer.append("this.").append(fieldName).append(" = $1;}");
 
@@ -385,7 +468,7 @@ public class JavassistBasedClassBuilder implements ClassBuilder {
 		}
 		CtMethod method = CtNewMethod.make(Modifier.PUBLIC, returnType,
 				methodName, new CtClass[] { parameter }, new CtClass[] {},
-				methodBody, hyalineProxyClass);
+				methodBody, hyalineProtoClass);
 		return method;
 	}
 

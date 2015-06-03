@@ -1,6 +1,8 @@
 package org.hyalinedto.core.reflect;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class ReflectionUtils {
 
@@ -44,6 +46,28 @@ public class ReflectionUtils {
 		}
 	}
 
+	
+	public static Object invokeMethod(Object target, String name, Class<?> parameterTypes, Object[] args) {
+		Method m  = null;
+		Object result = null;
+		try {
+			m = target.getClass().getDeclaredMethod(name, parameterTypes);
+		} catch (NoSuchMethodException | SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(m != null) {
+			try {
+				result = m.invoke(args);
+			} catch (IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return result;
+	}
+	
 	public static boolean isFieldInitialized(Object dto, Field f) {
 		boolean accessible = f.isAccessible();
 		f.setAccessible(true);

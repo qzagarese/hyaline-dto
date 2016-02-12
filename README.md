@@ -1,7 +1,3 @@
-## Breaking news!
-Hyaline is becoming a library for prototype objects in Java.
-Check out the [Spring Boot example](https://github.com/Bluesoul/hyaline-dto/blob/hyaline-prototypes/hyaline-dto-examples/hyalinedto-springboot-rest-example/src/main/java/org/hyalinedto/examples/springbootrest/resources/PrototypeResource.java) in the [hyaline-prototypes](https://github.com/Bluesoul/hyaline-dto/tree/hyaline-prototypes) development branch! 
-
 Hyaline DTO - A Java library for Dynamically Typed Objects 
 =====================
 
